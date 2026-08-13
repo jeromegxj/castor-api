@@ -123,15 +123,56 @@ final class OpenApiSchemaBuilder
      */
     public static function taskRunResponseSchema(): array
     {
+        return self::taskExecutionResponseSchema(includeId: false);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function taskStartResponseSchema(): array
+    {
         return [
             'type' => 'object',
             'properties' => [
+                'id' => ['type' => 'string'],
                 'task' => ['type' => 'string'],
-                'exitCode' => ['type' => 'integer'],
-                'stdout' => ['type' => 'string'],
-                'stderr' => ['type' => 'string'],
-                'durationMs' => ['type' => 'integer'],
+                'status' => ['type' => 'string', 'enum' => ['pending']],
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function taskStatusResponseSchema(): array
+    {
+        return self::taskExecutionResponseSchema(includeId: true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function taskExecutionResponseSchema(bool $includeId): array
+    {
+        $properties = [
+            'task' => ['type' => 'string'],
+            'status' => [
+                'type' => 'string',
+                'enum' => ['pending', 'running', 'completed', 'failed'],
+            ],
+            'exitCode' => ['type' => ['integer', 'null']],
+            'stdout' => ['type' => ['string', 'null']],
+            'stderr' => ['type' => ['string', 'null']],
+            'durationMs' => ['type' => ['integer', 'null']],
+        ];
+
+        if ($includeId) {
+            $properties = ['id' => ['type' => 'string']] + $properties;
+        }
+
+        return [
+            'type' => 'object',
+            'properties' => $properties,
         ];
     }
 }

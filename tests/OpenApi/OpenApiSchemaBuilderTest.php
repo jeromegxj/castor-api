@@ -13,6 +13,11 @@ use Jolicode\CastorApi\OpenApi\OpenApiSchemaBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class OpenApiSchemaBuilderTest extends TestCase
 {
     public function testFromCastorSchemaExportsArgumentsAndOptionsExtensions(): void
@@ -160,6 +165,7 @@ final class OpenApiSchemaBuilderTest extends TestCase
         $context = $loader->match(Request::create('/tasks/hello/run', 'POST'));
 
         self::assertNotNull($context);
+        self::assertSame('hello', $context->taskName);
         self::assertSame(['arg'], $context->requestSchema[CastorSchemaExtensions::ARGUMENTS] ?? null);
         self::assertSame(['name'], $context->requestSchema[CastorSchemaExtensions::OPTIONS] ?? null);
     }

@@ -7,3 +7,5 @@ parameters:
     scanFiles:
         - vendor/autoload.php
         - .castor.stub.php
+    scanDirectories:
+        - vendor/symfony/console

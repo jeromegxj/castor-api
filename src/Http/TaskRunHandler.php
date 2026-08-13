@@ -20,21 +20,12 @@ final class TaskRunHandler
         }
 
         try {
-            $payload = json_decode($request->getContent() ?: '{}', true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $exception) {
-            return new JsonResponse(['error' => 'Invalid JSON payload: ' . $exception->getMessage()], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!\is_array($payload)) {
-            return new JsonResponse(['error' => 'JSON payload must be an object.'], Response::HTTP_BAD_REQUEST);
-        }
-
-        try {
+            $payload = RequestPayloadParser::parse($request);
             $result = SubprocessTaskRunner::run(
                 castorBinary: $loader->getCastorBinary(),
                 projectRoot: $loader->getProjectRoot(),
                 workingDirectory: $operation->workingDirectory,
-                taskName: $operation->operationId,
+                taskName: $operation->taskName,
                 requestSchema: $operation->requestSchema,
                 payload: $payload,
             );
@@ -45,7 +36,7 @@ final class TaskRunHandler
         }
 
         return new JsonResponse([
-            'task' => $operation->operationId,
+            'task' => $operation->taskName,
             'exitCode' => $result['exitCode'],
             'stdout' => $result['stdout'],
             'stderr' => $result['stderr'],

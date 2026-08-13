@@ -23,11 +23,29 @@ final class SubprocessTaskRunner
         ?array $requestSchema,
         array $payload,
     ): array {
+        $cliArgs = JsonSchemaToCli::convert($requestSchema, $payload);
+
+        return self::runWithCliArgs($castorBinary, $projectRoot, $workingDirectory, $taskName, $cliArgs, $payload);
+    }
+
+    /**
+     * @param list<string>         $cliArgs
+     * @param array<string, mixed> $payload
+     *
+     * @return array{exitCode: int, stdout: string, stderr: string, durationMs: int}
+     */
+    public static function runWithCliArgs(
+        string $castorBinary,
+        string $projectRoot,
+        ?string $workingDirectory,
+        string $taskName,
+        array $cliArgs,
+        array $payload = [],
+    ): array {
         if (\function_exists('Castor\dispatch')) {
             \Castor\dispatch(new ApiTaskRunEvent($taskName, $payload));
         }
 
-        $cliArgs = JsonSchemaToCli::convert($requestSchema, $payload);
         $command = array_merge([$castorBinary, $taskName], $cliArgs);
 
         $startedAt = hrtime(true);

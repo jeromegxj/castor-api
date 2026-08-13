@@ -31,6 +31,30 @@ final class TaskName
         return self::defaultPath($taskName) . '/run';
     }
 
+    public static function startPath(string $taskName): string
+    {
+        return self::defaultPath($taskName) . '/start';
+    }
+
+    public static function statusPath(string $taskName): string
+    {
+        return self::defaultPath($taskName) . '/status/{runId}';
+    }
+
+    public static function actionPath(string $basePath, string $action): string
+    {
+        if (str_starts_with($basePath, '/tasks/')) {
+            return $basePath . '/' . $action;
+        }
+
+        return rtrim(rawurldecode($basePath), '/') . '/' . $action;
+    }
+
+    public static function statusPathFromBase(string $basePath): string
+    {
+        return self::actionPath($basePath, 'status/{runId}');
+    }
+
     public static function pathFromApi(AsApi $api, string $taskName): string
     {
         return $api->path ?? self::defaultPath($taskName);

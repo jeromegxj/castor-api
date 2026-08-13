@@ -14,6 +14,7 @@ final class AsApi
         public ?string $path = null,
         public array $methods = ['POST'],
         public bool $exposeSchema = true,
+        public bool $async = false,
     ) {
     }
 }
