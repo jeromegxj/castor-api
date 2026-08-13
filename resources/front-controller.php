@@ -44,5 +44,5 @@ if (null === $openapiPath || !is_file($openapiPath)) {
 
 $loader = new OpenApiLoader($openapiPath);
 $router = new Router();
-$response = $router->handle(Request::createFromGlobals(), $loader);
+$response = $router->handle(Request::createFromGlobals(), $loader, $packageRoot);
 $response->send();

@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class Router
 {
-    public function handle(Request $request, OpenApiLoader $loader): Response
+    public function handle(Request $request, OpenApiLoader $loader, string $packageRoot): Response
     {
         $authResponse = AuthMiddleware::authenticate($request, AuthToken::resolve());
 
@@ -32,6 +32,14 @@ final class Router
 
         if ($operation->isHealthCheck()) {
             return new JsonResponse(['status' => 'ok']);
+        }
+
+        if ($operation->isTaskStart()) {
+            return TaskStartHandler::start($loader, $operation, $request, $packageRoot);
+        }
+
+        if ($operation->isTaskStatus()) {
+            return TaskStatusHandler::status($loader, $operation, $request);
         }
 
         return TaskRunHandler::run($loader, $operation, $request);

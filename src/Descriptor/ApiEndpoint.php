@@ -16,6 +16,7 @@ final class ApiEndpoint
         public readonly array $methods,
         public readonly string $description,
         public readonly ?string $workingDirectory,
+        public readonly bool $async,
         public ?array $schema = null,
     ) {
     }
@@ -31,6 +32,7 @@ final class ApiEndpoint
             'methods' => $this->methods,
             'description' => $this->description,
             'workingDirectory' => $this->workingDirectory,
+            'async' => $this->async,
         ];
 
         if ($includeSchema && null !== $this->schema) {

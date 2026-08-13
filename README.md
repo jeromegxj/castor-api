@@ -20,15 +20,14 @@ function hello(
     // ...
 }
 
-#[AsTask(namespace: 'demo', description: 'Greet someone')]
-#[AsApi(methods: ['POST'])]
-function greet(
-    #[AsArgument]
-    string $name,
-): void {
-    // ...
+#[AsTask(namespace: 'demo', description: 'Slow async task')]
+#[AsApi(methods: ['POST'], async: true)]
+function slow(#[AsOption] int $seconds = 2): void {
+    sleep($seconds);
 }
 ```
+
+Tasks marked with `async: true` also expose async routes in addition to the synchronous `/run` endpoint.
 
 ### JSON body mapping
 
@@ -130,11 +129,30 @@ The PHP worker must be able to execute the Castor binary.
 |--------|---------------------|---------------------------------------------------|
 | GET    | `/health`           | Health check                                      |
 | GET    | `/openapi.json`     | OpenAPI 3.1 specification                         |
-| POST   | `/tasks/{name}/run` | Run task (JSON body = task arguments and options) |
+| POST   | `/tasks/{name}/run`            | Run task synchronously (JSON body = task arguments and options) |
+| POST   | `/tasks/{name}/start`          | Start async run (only for `#[AsApi(async: true)]` tasks)      |
+| GET    | `/tasks/{name}/status/{runId}` | Poll async run status and result                              |
 
 Task names containing a namespace use a colon (e.g. `demo:hello`). Example run path: `/tasks/demo:hello/run`.
 
+Async runs are stored as JSON files in `.castor/api/runs/{runId}.json`. The API consumer chooses sync or async by calling `/run` or `/start`.
+
 Discover available tasks and their request schemas via `GET /openapi.json`.
+
+### Async execution
+
+For tasks marked with `#[AsApi(async: true)]`:
+
+1. `POST /tasks/{name}/start` with the same JSON body as `/run`
+2. Response `202 Accepted`:
+
+```json
+{ "id": "uuid", "task": "demo:slow", "status": "pending" }
+```
+
+3. Poll `GET /tasks/{name}/status/{runId}` until `status` is `completed` or `failed`
+
+While the task is still running, `exitCode`, `stdout`, `stderr`, and `durationMs` are `null`.
 
 ### Examples
 
@@ -149,6 +167,12 @@ curl -X POST http://127.0.0.1:8080/tasks/demo:hello/run \
 curl -X POST http://127.0.0.1:8080/tasks/demo:greet/run \
   -H "Content-Type: application/json" \
   -d '{"name": "Castor"}'
+
+curl -X POST http://127.0.0.1:8080/tasks/demo:slow/start \
+  -H "Content-Type: application/json" \
+  -d '{"seconds": 2}'
+
+curl http://127.0.0.1:8080/tasks/demo:slow/status/{runId}
 
 curl -X POST http://127.0.0.1:8080/tasks/demo:hello/run \
   -H "Authorization: Bearer $CASTOR_API_TOKEN" \

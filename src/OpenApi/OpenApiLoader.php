@@ -23,6 +23,9 @@ final class OpenApiLoader
 
     private RouteCollection $routes;
 
+    /** @var array<string, array{path: string, method: string, operation: Operation}> */
+    private array $operationsById = [];
+
     private string $projectRoot;
 
     private string $castorBinary;
@@ -39,7 +42,7 @@ final class OpenApiLoader
         $this->spec = Reader::readFromJson($json);
         $this->projectRoot = self::projectRootFromOpenApiPath($filePath);
         $this->castorBinary = self::resolveCastorBinary();
-        $this->routes = self::buildRoutes($this->spec);
+        $this->routes = self::buildRoutes($this->spec, $this->operationsById);
     }
 
     public function getProjectRoot(): string
@@ -70,36 +73,31 @@ final class OpenApiLoader
         }
 
         $operationId = $parameters['_route'];
-        $path = $request->getPathInfo();
-        $method = strtoupper($request->getMethod());
-        $operation = $this->findOperation($path, strtolower($method));
 
-        if (null === $operation) {
+        if (!isset($this->operationsById[$operationId])) {
             return null;
         }
+
+        $operationEntry = $this->operationsById[$operationId];
+        $operation = $operationEntry['operation'];
+        $runId = isset($parameters['runId']) && \is_string($parameters['runId']) ? $parameters['runId'] : null;
 
         return new OperationContext(
             operationId: $operationId,
-            path: $path,
-            method: $method,
+            taskName: OperationKind::taskNameFromOperationId($operationId),
+            kind: OperationKind::fromOperationId($operationId),
+            path: $request->getPathInfo(),
+            method: strtoupper($request->getMethod()),
             requestSchema: self::extractRequestSchema($operation),
             workingDirectory: self::extractWorkingDirectory($operation),
+            runId: $runId,
         );
     }
 
-    private function findOperation(string $path, string $method): ?Operation
-    {
-        if (!isset($this->spec->paths[$path])) {
-            return null;
-        }
-
-        $pathItem = $this->spec->paths[$path];
-        $operation = $pathItem->{$method} ?? null;
-
-        return $operation instanceof Operation ? $operation : null;
-    }
-
-    private static function buildRoutes(OpenApi $spec): RouteCollection
+    /**
+     * @param array<string, array{path: string, method: string, operation: Operation}> $operationsById
+     */
+    private static function buildRoutes(OpenApi $spec, array &$operationsById): RouteCollection
     {
         $routes = new RouteCollection();
 
@@ -109,7 +107,12 @@ final class OpenApiLoader
                     continue;
                 }
 
-                $routes->add($operation->operationId, new Route($path, methods: [strtoupper($method)]));
+                $routes->add($operation->operationId, new Route((string) $path, methods: [strtoupper($method)]));
+                $operationsById[$operation->operationId] = [
+                    'path' => (string) $path,
+                    'method' => strtoupper($method),
+                    'operation' => $operation,
+                ];
             }
         }
 

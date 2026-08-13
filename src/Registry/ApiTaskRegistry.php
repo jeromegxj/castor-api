@@ -29,6 +29,7 @@ final class ApiTaskRegistry
             methods: $api->methods,
             description: $description,
             workingDirectory: $workingDirectory,
+            async: $api->async,
             schema: $schema,
         );
     }

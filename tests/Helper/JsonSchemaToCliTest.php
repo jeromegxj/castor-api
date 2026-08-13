@@ -9,9 +9,14 @@ use Jolicode\CastorApi\OpenApi\CastorSchemaExtensions;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class JsonSchemaToCliTest extends TestCase
 {
-    #[DataProvider('conversionProvider')]
+    #[DataProvider('provideConvertCases')]
     public function testConvert(array $schema, array $payload, array $expected): void
     {
         self::assertSame($expected, JsonSchemaToCli::convert($schema, $payload));
@@ -20,7 +25,7 @@ final class JsonSchemaToCliTest extends TestCase
     /**
      * @return iterable<string, array{array<string, mixed>, array<string, mixed>, list<string>}>
      */
-    public static function conversionProvider(): iterable
+    public static function provideConvertCases(): iterable
     {
         yield 'positional argument only' => [
             self::schema(
