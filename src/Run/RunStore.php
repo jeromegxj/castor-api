@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jolicode\CastorApi\Run;
 
 use Jolicode\CastorApi\Helper\Paths;
+use Symfony\Component\Uid\Uuid;
 
 final class RunStore
 {
@@ -23,7 +24,7 @@ final class RunStore
         ?string $workingDirectory,
     ): RunRecord {
         $record = new RunRecord(
-            id: RunIdGenerator::generate(),
+            id: Uuid::v4()->toRfc4122(),
             task: $task,
             status: RunStatus::Pending,
             cliArgs: $cliArgs,
@@ -76,11 +77,6 @@ final class RunStore
         if (false === file_put_contents($path, $payload, LOCK_EX)) {
             throw new \RuntimeException(\sprintf('Unable to write run record "%s".', $path));
         }
-    }
-
-    public static function projectRootFromRunPath(string $runPath): string
-    {
-        return \dirname($runPath, 3);
     }
 
     private function pathFor(string $runId): string

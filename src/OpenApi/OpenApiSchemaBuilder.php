@@ -123,7 +123,16 @@ final class OpenApiSchemaBuilder
      */
     public static function taskRunResponseSchema(): array
     {
-        return self::taskExecutionResponseSchema(includeId: false);
+        return [
+            'type' => 'object',
+            'properties' => [
+                'task' => ['type' => 'string'],
+                'exitCode' => ['type' => 'integer'],
+                'stdout' => ['type' => 'string'],
+                'stderr' => ['type' => 'string'],
+                'durationMs' => ['type' => 'integer'],
+            ],
+        ];
     }
 
     /**

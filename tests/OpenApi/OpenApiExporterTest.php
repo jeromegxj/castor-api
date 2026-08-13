@@ -73,6 +73,25 @@ final class OpenApiExporterTest extends TestCase
         self::assertFalse(isset($paths['/tasks/hello/status/{runId}']));
     }
 
+    public function testRunResponseSchemaDoesNotIncludeAsyncFields(): void
+    {
+        ApiTaskRegistry::registerEndpoint(
+            taskName: 'hello',
+            api: new AsApi(),
+            description: 'Hello task',
+            workingDirectory: null,
+        );
+
+        $spec = OpenApiExporter::build('/tmp/project');
+        $schema = $spec->paths['/tasks/hello/run']->post->responses['200']->content['application/json']->schema ?? null;
+
+        self::assertNotNull($schema);
+        self::assertArrayHasKey('task', $schema->properties);
+        self::assertArrayHasKey('exitCode', $schema->properties);
+        self::assertArrayNotHasKey('status', $schema->properties);
+        self::assertArrayNotHasKey('id', $schema->properties);
+    }
+
     public function testStatusRouteExtractsRunId(): void
     {
         $projectRoot = sys_get_temp_dir() . '/castor-api-openapi-' . uniqid('', true);

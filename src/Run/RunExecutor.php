@@ -16,22 +16,28 @@ final class RunExecutor
         $store = new RunStore($record->projectRoot);
         $store->save($record);
 
-        $result = SubprocessTaskRunner::runWithCliArgs(
-            castorBinary: $record->castorBinary,
-            projectRoot: $record->projectRoot,
-            workingDirectory: $record->workingDirectory,
-            taskName: $record->task,
-            cliArgs: $record->cliArgs,
-        );
+        try {
+            $result = SubprocessTaskRunner::runWithCliArgs(
+                castorBinary: $record->castorBinary,
+                projectRoot: $record->projectRoot,
+                workingDirectory: $record->workingDirectory,
+                taskName: $record->task,
+                cliArgs: $record->cliArgs,
+            );
 
-        $record->finishedAt = time();
-        $record->exitCode = $result['exitCode'];
-        $record->stdout = $result['stdout'];
-        $record->stderr = $result['stderr'];
-        $record->durationMs = $result['durationMs'];
-        $record->status = 0 === $result['exitCode'] ? RunStatus::Completed : RunStatus::Failed;
-
-        $store->save($record);
+            $record->exitCode = $result['exitCode'];
+            $record->stdout = $result['stdout'];
+            $record->stderr = $result['stderr'];
+            $record->durationMs = $result['durationMs'];
+            $record->status = 0 === $result['exitCode'] ? RunStatus::Completed : RunStatus::Failed;
+        } catch (\Throwable $exception) {
+            $record->exitCode = 1;
+            $record->stderr = $exception->getMessage();
+            $record->status = RunStatus::Failed;
+        } finally {
+            $record->finishedAt = time();
+            $store->save($record);
+        }
 
         return $record;
     }
