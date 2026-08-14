@@ -107,9 +107,10 @@ final class OpenApiLoader
                     continue;
                 }
 
-                $routes->add($operation->operationId, new Route((string) $path, methods: [strtoupper($method)]));
+                $routePath = rawurldecode((string) $path);
+                $routes->add($operation->operationId, new Route($routePath, methods: [strtoupper($method)]));
                 $operationsById[$operation->operationId] = [
-                    'path' => (string) $path,
+                    'path' => $routePath,
                     'method' => strtoupper($method),
                     'operation' => $operation,
                 ];

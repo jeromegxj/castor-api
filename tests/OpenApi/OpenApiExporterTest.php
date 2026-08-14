@@ -131,4 +131,36 @@ final class OpenApiExporterTest extends TestCase
         rmdir($projectRoot . '/.castor');
         rmdir($projectRoot);
     }
+
+    public function testEncodedOpenApiPathsMatchDecodedRequests(): void
+    {
+        $projectRoot = sys_get_temp_dir() . '/castor-api-openapi-encoded-' . uniqid('', true);
+        $openapiDir = $projectRoot . '/.castor/api';
+        mkdir($openapiDir, 0o777, true);
+
+        file_put_contents($openapiDir . '/openapi.json', json_encode([
+            'openapi' => '3.1.0',
+            'info' => ['title' => 'Test', 'version' => '1.0.0'],
+            'paths' => [
+                '/tasks/sylius%3Aimport%3Alist/run' => [
+                    'post' => [
+                        'operationId' => 'sylius:import:list',
+                        'responses' => [
+                            '200' => ['description' => 'OK'],
+                        ],
+                    ],
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $loader = new OpenApiLoader($openapiDir . '/openapi.json');
+        $context = $loader->match(Request::create('/tasks/sylius:import:list/run', 'POST'));
+
+        self::assertNotNull($context);
+        self::assertSame('sylius:import:list', $context->taskName);
+
+        rmdir($openapiDir);
+        rmdir($projectRoot . '/.castor');
+        rmdir($projectRoot);
+    }
 }
