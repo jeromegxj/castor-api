@@ -129,9 +129,9 @@ The PHP worker must be able to execute the Castor binary.
 |--------|---------------------|---------------------------------------------------|
 | GET    | `/health`           | Health check                                      |
 | GET    | `/openapi.json`     | OpenAPI 3.1 specification                         |
-| POST   | `/tasks/{name}/run`            | Run task synchronously (JSON body = task arguments and options) |
+| POST   | `/tasks/{name}/run`            | Run task synchronously (JSON body = task arguments and options). Returns `422` when the task exits with a non-zero code. |
 | POST   | `/tasks/{name}/start`          | Start async run (only for `#[AsApi(async: true)]` tasks)      |
-| GET    | `/tasks/{name}/status/{runId}` | Poll async run status and result                              |
+| GET    | `/tasks/{name}/status/{runId}` | Poll async run status and result. Returns `422` when the run ends with `status: failed`.                              |
 
 Task names containing a namespace use a colon (e.g. `demo:hello`). Example run path: `/tasks/demo:hello/run`.
 
@@ -153,6 +153,8 @@ For tasks marked with `#[AsApi(async: true)]`:
 3. Poll `GET /tasks/{name}/status/{runId}` until `status` is `completed` or `failed`
 
 While the task is still running, `exitCode`, `stdout`, `stderr`, and `durationMs` are `null`.
+
+When a task fails, the API returns `422 Unprocessable Entity` with the same JSON body as a successful response (`exitCode`, `stdout`, `stderr`, etc.). For sync runs, this applies to `POST /run`. For async runs, polling `/status` returns `200` while the run is `pending`, `running`, or `completed`, and `422` once `status` is `failed`.
 
 ### Examples
 

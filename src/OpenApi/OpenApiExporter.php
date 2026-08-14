@@ -94,14 +94,19 @@ final class OpenApiExporter
      */
     private static function buildRunOperation(ApiEndpoint $endpoint, string $projectRoot): array
     {
-        return self::buildTaskOperation(
-            endpoint: $endpoint,
-            projectRoot: $projectRoot,
-            operationId: $endpoint->taskName,
-            description: $endpoint->description,
-            responseSchema: OpenApiSchemaBuilder::taskRunResponseSchema(),
-            responseDescription: 'Task execution result',
-            responseCode: '200',
+        $responseSchema = OpenApiSchemaBuilder::taskRunResponseSchema();
+
+        return self::addTaskFailureResponse(
+            self::buildTaskOperation(
+                endpoint: $endpoint,
+                projectRoot: $projectRoot,
+                operationId: $endpoint->taskName,
+                description: $endpoint->description,
+                responseSchema: $responseSchema,
+                responseDescription: 'Task execution result',
+                responseCode: '200',
+            ),
+            $responseSchema,
         );
     }
 
@@ -126,15 +131,20 @@ final class OpenApiExporter
      */
     private static function buildStatusOperation(ApiEndpoint $endpoint, string $projectRoot): array
     {
-        $operation = self::buildTaskOperation(
-            endpoint: $endpoint,
-            projectRoot: $projectRoot,
-            operationId: $endpoint->taskName . '.status',
-            description: $endpoint->description . ' (async status)',
-            responseSchema: OpenApiSchemaBuilder::taskStatusResponseSchema(),
-            responseDescription: 'Async run status',
-            responseCode: '200',
-            includeRequestBody: false,
+        $responseSchema = OpenApiSchemaBuilder::taskStatusResponseSchema();
+
+        $operation = self::addTaskFailureResponse(
+            self::buildTaskOperation(
+                endpoint: $endpoint,
+                projectRoot: $projectRoot,
+                operationId: $endpoint->taskName . '.status',
+                description: $endpoint->description . ' (async status)',
+                responseSchema: $responseSchema,
+                responseDescription: 'Async run status',
+                responseCode: '200',
+                includeRequestBody: false,
+            ),
+            $responseSchema,
         );
 
         $operation['parameters'] = [[
@@ -194,6 +204,26 @@ final class OpenApiExporter
                 ],
             ];
         }
+
+        return $operation;
+    }
+
+    /**
+     * @param array<string, mixed> $operation
+     * @param array<string, mixed> $schema
+     *
+     * @return array<string, mixed>
+     */
+    private static function addTaskFailureResponse(array $operation, array $schema): array
+    {
+        $operation['responses']['422'] = [
+            'description' => 'Task execution failed',
+            'content' => [
+                'application/json' => [
+                    'schema' => $schema,
+                ],
+            ],
+        ];
 
         return $operation;
     }

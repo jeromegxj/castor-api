@@ -90,6 +90,22 @@ final class OpenApiExporterTest extends TestCase
         self::assertArrayHasKey('exitCode', $schema->properties);
         self::assertArrayNotHasKey('status', $schema->properties);
         self::assertArrayNotHasKey('id', $schema->properties);
+        self::assertArrayHasKey('422', $spec->paths['/tasks/hello/run']->post->responses);
+    }
+
+    public function testRunAndStatusOperationsDocumentTaskFailureResponse(): void
+    {
+        ApiTaskRegistry::registerEndpoint(
+            taskName: 'demo:slow',
+            api: new AsApi(async: true),
+            description: 'Slow task',
+            workingDirectory: null,
+        );
+
+        $spec = OpenApiExporter::build('/tmp/project');
+
+        self::assertArrayHasKey('422', $spec->paths['/tasks/demo%3Aslow/run']->post->responses);
+        self::assertArrayHasKey('422', $spec->paths['/tasks/demo%3Aslow/status/{runId}']->get->responses);
     }
 
     public function testStatusRouteExtractsRunId(): void

@@ -41,6 +41,6 @@ final class TaskRunHandler
             'stdout' => $result['stdout'],
             'stderr' => $result['stderr'],
             'durationMs' => $result['durationMs'],
-        ]);
+        ], TaskHttpStatus::fromExitCode($result['exitCode']));
     }
 }

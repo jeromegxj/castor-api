@@ -35,6 +35,9 @@ final class TaskStatusHandler
             return new JsonResponse(['error' => 'Run not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        return new JsonResponse($record->toStatusResponse());
+        return new JsonResponse(
+            $record->toStatusResponse(),
+            TaskHttpStatus::fromRunStatus($record->status),
+        );
     }
 }
