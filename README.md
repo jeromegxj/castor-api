@@ -29,6 +29,17 @@ function slow(#[AsOption] int $seconds = 2): void {
 
 Tasks marked with `async: true` also expose async routes in addition to the synchronous `/run` endpoint.
 
+### `#[AsApi]` options
+
+| Parameter      | Default    | Description                                               |
+|----------------|------------|-----------------------------------------------------------|
+| `path`         | `null`     | Custom base path (default: `/tasks/{name}`)               |
+| `methods`      | `['POST']` | HTTP methods for the synchronous `/run` endpoint          |
+| `exposeSchema` | `true`     | Export task parameters in the OpenAPI request body schema |
+| `async`        | `false`    | Also expose `/start` and `/status/{runId}` endpoints      |
+
+Set `exposeSchema: false` to publish a task without a request body in the OpenAPI spec (useful for parameterless tasks).
+
 ### JSON body mapping
 
 The request body is a JSON object whose keys match task parameter names:
@@ -125,13 +136,13 @@ The PHP worker must be able to execute the Castor binary.
 
 ### Endpoints
 
-| Method | Path                | Description                                       |
-|--------|---------------------|---------------------------------------------------|
-| GET    | `/health`           | Health check                                      |
-| GET    | `/openapi.json`     | OpenAPI 3.1 specification                         |
+| Method | Path                           | Description                                                                                                              |
+|--------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| GET    | `/health`                      | Health check                                                                                                             |
+| GET    | `/openapi.json`                | OpenAPI 3.1 specification                                                                                                |
 | POST   | `/tasks/{name}/run`            | Run task synchronously (JSON body = task arguments and options). Returns `422` when the task exits with a non-zero code. |
-| POST   | `/tasks/{name}/start`          | Start async run (only for `#[AsApi(async: true)]` tasks)      |
-| GET    | `/tasks/{name}/status/{runId}` | Poll async run status and result. Returns `422` when the run ends with `status: failed`.                              |
+| POST   | `/tasks/{name}/start`          | Start async run (only for `#[AsApi(async: true)]` tasks)                                                                 |
+| GET    | `/tasks/{name}/status/{runId}` | Poll async run status and result. Returns `422` when the run ends with `status: failed`.                                 |
 
 Task names containing a namespace use a colon (e.g. `demo:hello`). Example run path: `/tasks/demo:hello/run`.
 
@@ -144,13 +155,15 @@ Discover available tasks and their request schemas via `GET /openapi.json`.
 For tasks marked with `#[AsApi(async: true)]`:
 
 1. `POST /tasks/{name}/start` with the same JSON body as `/run`
-2. Response `202 Accepted`:
+2. Response `202 Accepted` (always, even if the task will eventually fail):
 
 ```json
 { "id": "uuid", "task": "demo:slow", "status": "pending" }
 ```
 
 3. Poll `GET /tasks/{name}/status/{runId}` until `status` is `completed` or `failed`
+
+Task failures are reported on `/status` (HTTP `422` when `status` is `failed`), not on `/start`.
 
 While the task is still running, `exitCode`, `stdout`, `stderr`, and `durationMs` are `null`.
 
@@ -184,17 +197,13 @@ curl -X POST http://127.0.0.1:8080/tasks/demo:hello/run \
 
 ## Quality assurance
 
-PHPStan and PHP CS Fixer are not project dependencies. Run them with [Castor remote execution](https://castor.jolicode.com/docs/getting-started/remote/) from the repository root.
-
 ### Setup
-
-Install runtime dependencies so PHPStan can resolve Symfony types:
 
 ```bash
 composer install
 ```
 
-Generate Castor stubs (required once, or after upgrading Castor):
+Generate Castor stubs once (or after upgrading Castor) so PHPStan can resolve Castor types:
 
 ```bash
 castor list
@@ -202,25 +211,39 @@ castor list
 
 This creates `.castor.stub.php`, referenced by `phpstan.neon`.
 
+### PHPUnit
+
+```bash
+composer test
+```
+
 ### PHPStan
 
 ```bash
-CASTOR_MEMORY_LIMIT=512M castor execute --deps symfony/console phpstan/phpstan analyse
+vendor/bin/phpstan analyse
 ```
 
 ### PHP CS Fixer
 
-Apply fixes:
+PHP CS Fixer is not a project dependency. Apply fixes with [Castor remote execution](https://castor.jolicode.com/docs/getting-started/remote/):
 
 ```bash
 CASTOR_MEMORY_LIMIT=512M castor execute friendsofphp/php-cs-fixer fix
 ```
 
-### PHPUnit
+Alternatively, run PHPStan the same way if you prefer not to install dev dependencies locally:
 
 ```bash
-composer install
-composer test
+CASTOR_MEMORY_LIMIT=512M castor execute --deps symfony/console phpstan/phpstan analyse
+```
+
+### Local demo
+
+The `fixtures/demo/` directory contains a minimal Castor project with sample tasks. From that directory:
+
+```bash
+cd fixtures/demo
+castor api:serve-development
 ```
 
 ## Security

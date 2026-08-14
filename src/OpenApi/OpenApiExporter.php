@@ -13,8 +13,6 @@ use Jolicode\CastorApi\Registry\ApiTaskRegistry;
 
 final class OpenApiExporter
 {
-    private const WORKING_DIRECTORY_EXTENSION = 'x-castor-working-directory';
-
     public static function build(string $projectRoot): OpenApi
     {
         $paths = [
@@ -188,7 +186,7 @@ final class OpenApiExporter
         ];
 
         if (null !== $endpoint->workingDirectory && $endpoint->workingDirectory !== $projectRoot) {
-            $operation[self::WORKING_DIRECTORY_EXTENSION] = $endpoint->workingDirectory;
+            $operation[CastorSchemaExtensions::WORKING_DIRECTORY] = $endpoint->workingDirectory;
         }
 
         if ($includeRequestBody && null !== $endpoint->schema) {

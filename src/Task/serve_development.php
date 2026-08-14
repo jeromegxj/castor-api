@@ -6,6 +6,7 @@ namespace castor_api\task;
 
 use Castor\Attribute\AsOption;
 use Castor\Attribute\AsTask;
+use Jolicode\CastorApi\Helper\AuthToken;
 use Jolicode\CastorApi\Helper\RoutingExporter;
 
 use function Castor\context;
@@ -19,8 +20,7 @@ function serve_development(
     #[AsOption(shortcut: 'p', description: 'Port')]
     int $port = 8080,
 ): void {
-    $rawAuthToken = getenv('CASTOR_API_TOKEN');
-    $authToken = \is_string($rawAuthToken) && '' !== $rawAuthToken ? $rawAuthToken : null;
+    $authToken = AuthToken::resolve();
 
     if (null !== $authToken) {
         io()->note('CASTOR_API_TOKEN is set: API requests require Authorization: Bearer …');

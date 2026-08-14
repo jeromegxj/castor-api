@@ -17,8 +17,6 @@ use Symfony\Component\Routing\RouteCollection;
 
 final class OpenApiLoader
 {
-    private const WORKING_DIRECTORY_EXTENSION = 'x-castor-working-directory';
-
     private OpenApi $spec;
 
     private RouteCollection $routes;
@@ -150,7 +148,7 @@ final class OpenApiLoader
     private static function extractWorkingDirectory(Operation $operation): ?string
     {
         $extensions = $operation->getExtensions();
-        $workingDirectory = $extensions[self::WORKING_DIRECTORY_EXTENSION] ?? null;
+        $workingDirectory = $extensions[CastorSchemaExtensions::WORKING_DIRECTORY] ?? null;
 
         return \is_string($workingDirectory) && '' !== $workingDirectory ? $workingDirectory : null;
     }

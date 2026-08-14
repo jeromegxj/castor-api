@@ -93,7 +93,6 @@ final class SubprocessTaskRunner
 
         unset(
             $environment['CASTOR_PHP_REPLACE'],
-            $environment['CASTOR_API_REGISTRY'],
             $environment['CASTOR_API_PACKAGE_ROOT'],
         );
 

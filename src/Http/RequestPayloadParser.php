@@ -19,7 +19,7 @@ final class RequestPayloadParser
             throw new \InvalidArgumentException('Invalid JSON payload: ' . $exception->getMessage(), previous: $exception);
         }
 
-        if (!\is_array($payload)) {
+        if (!\is_array($payload) || (array_is_list($payload) && [] !== $payload)) {
             throw new \InvalidArgumentException('JSON payload must be an object.');
         }
 

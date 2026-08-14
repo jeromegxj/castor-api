@@ -6,6 +6,7 @@ namespace Jolicode\CastorApi\Http;
 
 use Jolicode\CastorApi\Helper\AuthToken;
 use Jolicode\CastorApi\OpenApi\OpenApiLoader;
+use Jolicode\CastorApi\OpenApi\OperationKind;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,18 +31,11 @@ final class Router
             return new JsonResponse(['error' => 'Not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($operation->isHealthCheck()) {
-            return new JsonResponse(['status' => 'ok']);
-        }
-
-        if ($operation->isTaskStart()) {
-            return TaskStartHandler::start($loader, $operation, $request, $packageRoot);
-        }
-
-        if ($operation->isTaskStatus()) {
-            return TaskStatusHandler::status($loader, $operation, $request);
-        }
-
-        return TaskRunHandler::run($loader, $operation, $request);
+        return match ($operation->kind) {
+            OperationKind::Health => new JsonResponse(['status' => 'ok']),
+            OperationKind::Start => TaskStartHandler::start($loader, $operation, $request, $packageRoot),
+            OperationKind::Status => TaskStatusHandler::status($loader, $operation, $request),
+            OperationKind::Run => TaskRunHandler::run($loader, $operation, $request),
+        };
     }
 }

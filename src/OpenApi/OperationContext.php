@@ -20,24 +20,4 @@ final class OperationContext
         public readonly ?string $runId = null,
     ) {
     }
-
-    public function isHealthCheck(): bool
-    {
-        return OperationKind::Health === $this->kind;
-    }
-
-    public function isTaskRun(): bool
-    {
-        return OperationKind::Run === $this->kind;
-    }
-
-    public function isTaskStart(): bool
-    {
-        return OperationKind::Start === $this->kind;
-    }
-
-    public function isTaskStatus(): bool
-    {
-        return OperationKind::Status === $this->kind;
-    }
 }

@@ -6,6 +6,7 @@ namespace Jolicode\CastorApi\Tests\Http;
 
 use Jolicode\CastorApi\Http\TaskHttpStatus;
 use Jolicode\CastorApi\Run\RunStatus;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -31,9 +32,7 @@ final class TaskHttpStatusTest extends TestCase
         self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, TaskHttpStatus::fromRunStatus(RunStatus::Failed));
     }
 
-    /**
-     * @dataProvider provideNonFailedRunStatuses
-     */
+    #[DataProvider('provideFromRunStatusReturnsOkForNonFailedCases')]
     public function testFromRunStatusReturnsOkForNonFailed(RunStatus $status): void
     {
         self::assertSame(Response::HTTP_OK, TaskHttpStatus::fromRunStatus($status));
@@ -42,7 +41,7 @@ final class TaskHttpStatusTest extends TestCase
     /**
      * @return iterable<string, array{RunStatus}>
      */
-    public static function provideNonFailedRunStatuses(): iterable
+    public static function provideFromRunStatusReturnsOkForNonFailedCases(): iterable
     {
         yield 'pending' => [RunStatus::Pending];
         yield 'running' => [RunStatus::Running];

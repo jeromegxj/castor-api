@@ -42,11 +42,6 @@ final class ApiTaskRegistry
         return self::$endpoints;
     }
 
-    public static function get(string $taskName): ?ApiEndpoint
-    {
-        return self::$endpoints[$taskName] ?? null;
-    }
-
     public static function reset(): void
     {
         self::$endpoints = [];
