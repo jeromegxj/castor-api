@@ -146,7 +146,7 @@ The PHP worker must be able to execute the Castor binary.
 
 Task names containing a namespace use a colon (e.g. `demo:hello`). Example run path: `/tasks/demo:hello/run`.
 
-Async runs are stored as JSON files in `.castor/api/runs/{runId}.json`. The API consumer chooses sync or async by calling `/run` or `/start`.
+Async runs are stored as JSON files in `.castor/api/runs/{runId}.json`. The API consumer chooses sync or async by calling `/run` or `/start`. When a new async run starts, runs older than 24 hours are automatically deleted.
 
 Discover available tasks and their request schemas via `GET /openapi.json`.
 

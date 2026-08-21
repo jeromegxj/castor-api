@@ -9,6 +9,8 @@ use Symfony\Component\Uid\Uuid;
 
 final class RunStore
 {
+    public const RETENTION_SECONDS = 86_400;
+
     public function __construct(
         private readonly string $projectRoot,
     ) {
@@ -23,6 +25,8 @@ final class RunStore
         string $castorBinary,
         ?string $workingDirectory,
     ): RunRecord {
+        $this->purgeExpired();
+
         $record = new RunRecord(
             id: Uuid::v4()->toRfc4122(),
             task: $task,
@@ -63,6 +67,33 @@ final class RunStore
         return RunRecord::fromStorage($data);
     }
 
+    public function purgeExpired(?int $now = null): int
+    {
+        $directory = Paths::runsDir($this->projectRoot);
+
+        if (!is_dir($directory)) {
+            return 0;
+        }
+
+        $now ??= time();
+        $threshold = $now - self::RETENTION_SECONDS;
+        $deleted = 0;
+
+        foreach (glob($directory . '/*.json') ?: [] as $path) {
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $createdAt = $this->readCreatedAt($path);
+
+            if ($createdAt < $threshold && unlink($path)) {
+                ++$deleted;
+            }
+        }
+
+        return $deleted;
+    }
+
     public function save(RunRecord $record): void
     {
         $directory = Paths::runsDir($this->projectRoot);
@@ -82,5 +113,23 @@ final class RunStore
     private function pathFor(string $runId): string
     {
         return Paths::runsDir($this->projectRoot) . '/' . $runId . '.json';
+    }
+
+    private function readCreatedAt(string $path): int
+    {
+        $contents = file_get_contents($path);
+
+        if (false === $contents) {
+            return (int) filemtime($path);
+        }
+
+        try {
+            /** @var array<string, mixed> $data */
+            $data = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return (int) filemtime($path);
+        }
+
+        return isset($data['createdAt']) ? (int) $data['createdAt'] : (int) filemtime($path);
     }
 }

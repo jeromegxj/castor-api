@@ -67,4 +67,63 @@ final class RunStoreTest extends TestCase
         self::assertSame(RunStatus::Completed, $updated->status);
         self::assertSame('done', $updated->stdout);
     }
+
+    public function testPurgeExpiredDeletesRunsOlderThan24Hours(): void
+    {
+        $runsDir = $this->projectRoot . '/.castor/api/runs';
+        $now = 1_700_000_000;
+        $oldRunId = 'old-run-id';
+        $recentRunId = 'recent-run-id';
+
+        file_put_contents($runsDir . '/' . $oldRunId . '.json', json_encode([
+            'id' => $oldRunId,
+            'task' => 'demo:slow',
+            'status' => 'completed',
+            'cliArgs' => [],
+            'projectRoot' => $this->projectRoot,
+            'castorBinary' => 'castor',
+            'workingDirectory' => null,
+            'createdAt' => $now - RunStore::RETENTION_SECONDS - 1,
+        ], JSON_THROW_ON_ERROR));
+
+        file_put_contents($runsDir . '/' . $recentRunId . '.json', json_encode([
+            'id' => $recentRunId,
+            'task' => 'demo:slow',
+            'status' => 'completed',
+            'cliArgs' => [],
+            'projectRoot' => $this->projectRoot,
+            'castorBinary' => 'castor',
+            'workingDirectory' => null,
+            'createdAt' => $now - RunStore::RETENTION_SECONDS + 60,
+        ], JSON_THROW_ON_ERROR));
+
+        $store = new RunStore($this->projectRoot);
+
+        self::assertSame(1, $store->purgeExpired($now));
+        self::assertFileDoesNotExist($runsDir . '/' . $oldRunId . '.json');
+        self::assertFileExists($runsDir . '/' . $recentRunId . '.json');
+    }
+
+    public function testCreatePurgesExpiredRuns(): void
+    {
+        $runsDir = $this->projectRoot . '/.castor/api/runs';
+        $oldRunId = 'old-run-id';
+
+        file_put_contents($runsDir . '/' . $oldRunId . '.json', json_encode([
+            'id' => $oldRunId,
+            'task' => 'demo:slow',
+            'status' => 'failed',
+            'cliArgs' => [],
+            'projectRoot' => $this->projectRoot,
+            'castorBinary' => 'castor',
+            'workingDirectory' => null,
+            'createdAt' => time() - RunStore::RETENTION_SECONDS - 3600,
+        ], JSON_THROW_ON_ERROR));
+
+        $store = new RunStore($this->projectRoot);
+        $store->create('demo:slow', [], 'castor', null);
+
+        self::assertFileDoesNotExist($runsDir . '/' . $oldRunId . '.json');
+        self::assertCount(1, glob($runsDir . '/*.json') ?: []);
+    }
 }
