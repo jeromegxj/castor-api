@@ -16,3 +16,5 @@ foreach ([
         break;
     }
 }
+
+import($packageRoot . '/src/Listener/register_api_tasks.php');
