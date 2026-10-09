@@ -32,4 +32,11 @@ final class Paths
     {
         return self::apiVarDir() . '/openapi.json';
     }
+
+    public static function runsDir(?string $projectRoot = null): string
+    {
+        $root = $projectRoot ?? self::projectRoot();
+
+        return $root . '/.castor/api/runs';
+    }
 }

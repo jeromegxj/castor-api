@@ -11,20 +11,13 @@ final class OperationContext
      */
     public function __construct(
         public readonly string $operationId,
+        public readonly string $taskName,
+        public readonly OperationKind $kind,
         public readonly string $path,
         public readonly string $method,
         public readonly ?array $requestSchema,
         public readonly ?string $workingDirectory,
+        public readonly ?string $runId = null,
     ) {
-    }
-
-    public function isHealthCheck(): bool
-    {
-        return 'castor.health' === $this->operationId;
-    }
-
-    public function isTaskRun(): bool
-    {
-        return !$this->isHealthCheck();
     }
 }

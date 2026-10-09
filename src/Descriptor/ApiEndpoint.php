@@ -16,27 +16,8 @@ final class ApiEndpoint
         public readonly array $methods,
         public readonly string $description,
         public readonly ?string $workingDirectory,
+        public readonly bool $async,
         public ?array $schema = null,
     ) {
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(bool $includeSchema = true): array
-    {
-        $data = [
-            'name' => $this->taskName,
-            'path' => $this->path,
-            'methods' => $this->methods,
-            'description' => $this->description,
-            'workingDirectory' => $this->workingDirectory,
-        ];
-
-        if ($includeSchema && null !== $this->schema) {
-            $data['schema'] = $this->schema;
-        }
-
-        return $data;
     }
 }

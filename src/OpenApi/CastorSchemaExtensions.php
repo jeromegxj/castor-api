@@ -9,4 +9,6 @@ final class CastorSchemaExtensions
     public const ARGUMENTS = 'x-castor-arguments';
 
     public const OPTIONS = 'x-castor-options';
+
+    public const WORKING_DIRECTORY = 'x-castor-working-directory';
 }

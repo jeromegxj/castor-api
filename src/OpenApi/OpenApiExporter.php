@@ -13,8 +13,6 @@ use Castor\Api\Registry\ApiTaskRegistry;
 
 final class OpenApiExporter
 {
-    private const WORKING_DIRECTORY_EXTENSION = 'x-castor-working-directory';
-
     public static function build(string $projectRoot): OpenApi
     {
         $paths = [
@@ -44,43 +42,13 @@ final class OpenApiExporter
         uasort($endpoints, static fn (ApiEndpoint $a, ApiEndpoint $b): int => strcmp($a->taskName, $b->taskName));
 
         foreach ($endpoints as $endpoint) {
-            $runPath = self::runPath($endpoint);
-
             foreach ($endpoint->methods as $method) {
-                $operation = [
-                    'operationId' => $endpoint->taskName,
-                    'description' => $endpoint->description,
-                    'responses' => [
-                        '200' => [
-                            'description' => 'Task execution result',
-                            'content' => [
-                                'application/json' => [
-                                    'schema' => OpenApiSchemaBuilder::taskRunResponseSchema(),
-                                ],
-                            ],
-                        ],
-                    ],
-                ];
+                $paths[self::runPath($endpoint)][strtolower($method)] = self::buildRunOperation($endpoint, $projectRoot);
+            }
 
-                if (null !== $endpoint->workingDirectory && $endpoint->workingDirectory !== $projectRoot) {
-                    $operation[self::WORKING_DIRECTORY_EXTENSION] = $endpoint->workingDirectory;
-                }
-
-                if (null !== $endpoint->schema) {
-                    /** @var array{arguments: list<array<string, mixed>>, options: list<array<string, mixed>>} $castorSchema */
-                    $castorSchema = $endpoint->schema;
-
-                    $operation['requestBody'] = [
-                        'required' => false,
-                        'content' => [
-                            'application/json' => [
-                                'schema' => OpenApiSchemaBuilder::fromCastorSchema($castorSchema),
-                            ],
-                        ],
-                    ];
-                }
-
-                $paths[$runPath][strtolower($method)] = $operation;
+            if ($endpoint->async) {
+                $paths[self::startPath($endpoint)]['post'] = self::buildStartOperation($endpoint, $projectRoot);
+                $paths[self::statusPath($endpoint)]['get'] = self::buildStatusOperation($endpoint, $projectRoot);
             }
         }
 
@@ -119,12 +87,157 @@ final class OpenApiExporter
         return $openapiPath;
     }
 
-    private static function runPath(ApiEndpoint $endpoint): string
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildRunOperation(ApiEndpoint $endpoint, string $projectRoot): array
     {
-        if ($endpoint->path !== TaskName::defaultPath($endpoint->taskName)) {
-            return rtrim(rawurldecode($endpoint->path), '/') . '/run';
+        $responseSchema = OpenApiSchemaBuilder::taskRunResponseSchema();
+
+        return self::addTaskFailureResponse(
+            self::buildTaskOperation(
+                endpoint: $endpoint,
+                projectRoot: $projectRoot,
+                operationId: $endpoint->taskName,
+                description: $endpoint->description,
+                responseSchema: $responseSchema,
+                responseDescription: 'Task execution result',
+                responseCode: '200',
+            ),
+            $responseSchema,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildStartOperation(ApiEndpoint $endpoint, string $projectRoot): array
+    {
+        return self::buildTaskOperation(
+            endpoint: $endpoint,
+            projectRoot: $projectRoot,
+            operationId: $endpoint->taskName . '.start',
+            description: $endpoint->description . ' (async start)',
+            responseSchema: OpenApiSchemaBuilder::taskStartResponseSchema(),
+            responseDescription: 'Async run accepted',
+            responseCode: '202',
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildStatusOperation(ApiEndpoint $endpoint, string $projectRoot): array
+    {
+        $responseSchema = OpenApiSchemaBuilder::taskStatusResponseSchema();
+
+        $operation = self::addTaskFailureResponse(
+            self::buildTaskOperation(
+                endpoint: $endpoint,
+                projectRoot: $projectRoot,
+                operationId: $endpoint->taskName . '.status',
+                description: $endpoint->description . ' (async status)',
+                responseSchema: $responseSchema,
+                responseDescription: 'Async run status',
+                responseCode: '200',
+                includeRequestBody: false,
+            ),
+            $responseSchema,
+        );
+
+        $operation['parameters'] = [[
+            'name' => 'runId',
+            'in' => 'path',
+            'required' => true,
+            'schema' => ['type' => 'string'],
+        ]];
+
+        return $operation;
+    }
+
+    /**
+     * @param array<string, mixed> $responseSchema
+     *
+     * @return array<string, mixed>
+     */
+    private static function buildTaskOperation(
+        ApiEndpoint $endpoint,
+        string $projectRoot,
+        string $operationId,
+        string $description,
+        array $responseSchema,
+        string $responseDescription,
+        string $responseCode,
+        bool $includeRequestBody = true,
+    ): array {
+        $operation = [
+            'operationId' => $operationId,
+            'description' => $description,
+            'responses' => [
+                $responseCode => [
+                    'description' => $responseDescription,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => $responseSchema,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        if (null !== $endpoint->workingDirectory && $endpoint->workingDirectory !== $projectRoot) {
+            $operation[CastorSchemaExtensions::WORKING_DIRECTORY] = $endpoint->workingDirectory;
         }
 
-        return \sprintf('/tasks/%s/run', $endpoint->taskName);
+        if ($includeRequestBody && null !== $endpoint->schema) {
+            /** @var array{arguments: list<array<string, mixed>>, options: list<array<string, mixed>>} $castorSchema */
+            $castorSchema = $endpoint->schema;
+
+            $operation['requestBody'] = [
+                'required' => false,
+                'content' => [
+                    'application/json' => [
+                        'schema' => OpenApiSchemaBuilder::fromCastorSchema($castorSchema),
+                    ],
+                ],
+            ];
+        }
+
+        return $operation;
+    }
+
+    /**
+     * @param array<string, mixed> $operation
+     * @param array<string, mixed> $schema
+     *
+     * @return array<string, mixed>
+     */
+    private static function addTaskFailureResponse(array $operation, array $schema): array
+    {
+        $operation['responses']['422'] = [
+            'description' => 'Task execution failed',
+            'content' => [
+                'application/json' => [
+                    'schema' => $schema,
+                ],
+            ],
+        ];
+
+        return $operation;
+    }
+
+    private static function runPath(ApiEndpoint $endpoint): string
+    {
+        return TaskName::actionPath($endpoint->path, 'run');
+    }
+
+    private static function startPath(ApiEndpoint $endpoint): string
+    {
+        return TaskName::actionPath($endpoint->path, 'start');
+    }
+
+    private static function statusPath(ApiEndpoint $endpoint): string
+    {
+        return TaskName::statusPathFromBase($endpoint->path);
     }
 }

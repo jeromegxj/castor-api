@@ -29,6 +29,7 @@ final class ApiTaskRegistry
             methods: $api->methods,
             description: $description,
             workingDirectory: $workingDirectory,
+            async: $api->async,
             schema: $schema,
         );
     }
@@ -39,11 +40,6 @@ final class ApiTaskRegistry
     public static function all(): array
     {
         return self::$endpoints;
-    }
-
-    public static function get(string $taskName): ?ApiEndpoint
-    {
-        return self::$endpoints[$taskName] ?? null;
     }
 
     public static function reset(): void
