@@ -18,3 +18,4 @@ foreach ([
 }
 
 import($packageRoot . '/src/Listener/register_api_tasks.php');
+import($packageRoot . '/src/Task/export_openapi.php');
