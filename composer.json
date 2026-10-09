@@ -1,0 +1,40 @@
+{
+    "name": "jeromegxj/castor-api",
+    "description": "Expose Castor tasks marked with #[AsApi] over HTTP",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jolicode",
+            "email": "contact@jolicode.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "cebe/php-openapi": "^1.8",
+        "symfony/console": "^7.4|^8.0",
+        "symfony/http-foundation": "^7.4",
+        "symfony/routing": "^7.4|^8.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Castor\\Api\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Castor\\Api\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

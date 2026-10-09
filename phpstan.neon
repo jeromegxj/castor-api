@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - src/
+        - resources/
+        - public/
+    scanFiles:
+        - vendor/autoload.php
+        - .castor.stub.php

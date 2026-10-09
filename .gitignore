@@ -1,0 +1,7 @@
+/vendor/
+/.castor/
+/.castor.stub.php
+.php-cs-fixer.cache
+composer.lock
+castor.composer.lock
+/.phpunit.cache
