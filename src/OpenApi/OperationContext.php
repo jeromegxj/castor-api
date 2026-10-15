@@ -8,6 +8,7 @@ final class OperationContext
 {
     /**
      * @param array<string, mixed>|null $requestSchema
+     * @param list<string>              $locks
      */
     public function __construct(
         public readonly string $operationId,
@@ -18,6 +19,7 @@ final class OperationContext
         public readonly ?array $requestSchema,
         public readonly ?string $workingDirectory,
         public readonly ?string $runId = null,
+        public readonly array $locks = [],
     ) {
     }
 }

@@ -11,4 +11,6 @@ final class CastorSchemaExtensions
     public const OPTIONS = 'x-castor-options';
 
     public const WORKING_DIRECTORY = 'x-castor-working-directory';
+
+    public const LOCKS = 'x-castor-locks';
 }

@@ -89,6 +89,7 @@ final class OpenApiLoader
             requestSchema: self::extractRequestSchema($operation),
             workingDirectory: self::extractWorkingDirectory($operation),
             runId: $runId,
+            locks: self::extractLocks($operation),
         );
     }
 
@@ -151,6 +152,16 @@ final class OpenApiLoader
         $workingDirectory = $extensions[CastorSchemaExtensions::WORKING_DIRECTORY] ?? null;
 
         return \is_string($workingDirectory) && '' !== $workingDirectory ? $workingDirectory : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function extractLocks(Operation $operation): array
+    {
+        $locks = $operation->getExtensions()[CastorSchemaExtensions::LOCKS] ?? [];
+
+        return \is_array($locks) ? array_values(array_filter($locks, static fn (mixed $lock): bool => \is_string($lock) && '' !== $lock)) : [];
     }
 
     public static function projectRootFromOpenApiPath(string $openapiPath): string

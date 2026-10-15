@@ -25,6 +25,11 @@ final class Router
             return new JsonResponse(json_decode($loader->toJson(), true));
         }
 
+        // Served without the spec, so it also works with an OpenAPI file exported by an older version.
+        if ('/runs' === $request->getPathInfo() && 'GET' === $request->getMethod()) {
+            return RunListHandler::list($loader);
+        }
+
         $operation = $loader->match($request);
 
         if (null === $operation) {

@@ -6,6 +6,7 @@ namespace Castor\Api\Http;
 
 use Castor\Api\OpenApi\OpenApiLoader;
 use Castor\Api\OpenApi\OperationContext;
+use Castor\Api\Run\RunConflictException;
 use Castor\Api\Runner\AsyncRunLauncher;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,11 @@ final class TaskStartHandler
         try {
             $payload = RequestPayloadParser::parse($request);
             $record = new AsyncRunLauncher($loader, $packageRoot)->start($operation, $payload);
+        } catch (RunConflictException $exception) {
+            return new JsonResponse([
+                'error' => $exception->getMessage(),
+                'conflict' => $exception->conflict->toSummaryResponse(),
+            ], Response::HTTP_CONFLICT);
         } catch (\InvalidArgumentException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $exception) {

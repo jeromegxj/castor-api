@@ -22,16 +22,95 @@ final class RunStore
     }
 
     /**
-     * @param list<string> $cliArgs
+     * @param list<string>         $cliArgs
+     * @param list<string>         $locks
+     * @param array<string, mixed> $payload
+     *
+     * @throws RunConflictException when an active run holds one of the locks
      */
     public function create(
         string $task,
         array $cliArgs,
         string $castorBinary,
         ?string $workingDirectory,
+        array $locks = [],
+        array $payload = [],
     ): RunRecord {
         $this->purgeExpired();
 
+        if ([] === $locks) {
+            return $this->createRecord($task, $cliArgs, $castorBinary, $workingDirectory, $locks, $payload);
+        }
+
+        // Checking the active runs and saving the new one must not interleave with another start.
+        return $this->withExclusiveLock(function () use ($task, $cliArgs, $castorBinary, $workingDirectory, $locks, $payload): RunRecord {
+            $this->assertNoConflict($task, $locks);
+
+            return $this->createRecord($task, $cliArgs, $castorBinary, $workingDirectory, $locks, $payload);
+        });
+    }
+
+    /**
+     * @param list<string> $locks
+     *
+     * @throws RunConflictException when an active run holds one of the locks
+     */
+    public function assertNoConflict(string $task, array $locks): void
+    {
+        if ([] === $locks) {
+            return;
+        }
+
+        foreach ($this->active() as $run) {
+            $shared = array_values(array_intersect($locks, $run->locks));
+
+            if ([] !== $shared) {
+                throw new RunConflictException($task, $run, $shared[0]);
+            }
+        }
+    }
+
+    /**
+     * The pending and running runs, oldest first. Runs whose worker is gone are marked as failed and left out.
+     *
+     * @return list<RunRecord>
+     */
+    public function active(): array
+    {
+        $runs = [];
+
+        foreach (glob(Paths::runsDir($this->projectRoot) . '/*.json') ?: [] as $path) {
+            $record = $this->get(basename($path, '.json'));
+
+            if (null === $record || !$record->isActive()) {
+                continue;
+            }
+
+            $record = $this->failIfLost($record);
+
+            if ($record->isActive()) {
+                $runs[] = $record;
+            }
+        }
+
+        usort($runs, static fn (RunRecord $a, RunRecord $b): int => [$a->createdAt, $a->id] <=> [$b->createdAt, $b->id]);
+
+        return $runs;
+    }
+
+    /**
+     * @param list<string>         $cliArgs
+     * @param list<string>         $locks
+     * @param array<string, mixed> $payload
+     */
+    private function createRecord(
+        string $task,
+        array $cliArgs,
+        string $castorBinary,
+        ?string $workingDirectory,
+        array $locks,
+        array $payload,
+    ): RunRecord {
         $record = new RunRecord(
             id: Uuid::v4()->toRfc4122(),
             task: $task,
@@ -41,11 +120,42 @@ final class RunStore
             castorBinary: $castorBinary,
             workingDirectory: $workingDirectory,
             createdAt: time(),
+            locks: $locks,
+            payload: $payload,
         );
 
         $this->save($record);
 
         return $record;
+    }
+
+    /**
+     * @template T
+     *
+     * @param callable(): T $callback
+     *
+     * @return T
+     */
+    private function withExclusiveLock(callable $callback): mixed
+    {
+        $directory = Paths::runsDir($this->projectRoot);
+
+        if (!is_dir($directory) && !mkdir($directory, 0o775, true) && !is_dir($directory)) {
+            throw new \RuntimeException(\sprintf('Unable to create runs directory "%s".', $directory));
+        }
+
+        $handle = fopen($directory . '/.lock', 'c');
+
+        if (false === $handle || !flock($handle, LOCK_EX)) {
+            throw new \RuntimeException(\sprintf('Unable to lock the runs directory "%s".', $directory));
+        }
+
+        try {
+            return $callback();
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
     }
 
     public function get(string $runId): ?RunRecord
@@ -170,6 +280,13 @@ final class RunStore
     {
         if ($pid <= 0) {
             return false;
+        }
+
+        // A worker that died without being reaped stays a zombie: it still answers to posix_kill().
+        $stat = @file_get_contents('/proc/' . $pid . '/stat');
+
+        if (\is_string($stat) && 1 === preg_match('/\)\s+([A-Za-z])\s/', $stat, $matches)) {
+            return !\in_array($matches[1], ['Z', 'X', 'x'], true);
         }
 
         if (\function_exists('posix_kill')) {

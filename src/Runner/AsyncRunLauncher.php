@@ -8,6 +8,7 @@ use Castor\Api\Helper\JsonSchemaToCli;
 use Castor\Api\Helper\PhpBinary;
 use Castor\Api\OpenApi\OpenApiLoader;
 use Castor\Api\OpenApi\OperationContext;
+use Castor\Api\Run\RunLocks;
 use Castor\Api\Run\RunRecord;
 use Castor\Api\Run\RunStore;
 
@@ -31,6 +32,8 @@ final class AsyncRunLauncher
             cliArgs: $cliArgs,
             castorBinary: $this->loader->getCastorBinary(),
             workingDirectory: $operation->workingDirectory,
+            locks: RunLocks::resolve($operation->locks, $payload),
+            payload: $payload,
         );
 
         $this->launchWorker($record->id);

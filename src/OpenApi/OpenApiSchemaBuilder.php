@@ -153,6 +153,55 @@ final class OpenApiSchemaBuilder
     /**
      * @return array<string, mixed>
      */
+    public static function activeRunsResponseSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'runs' => [
+                    'type' => 'array',
+                    'items' => self::runSummarySchema(),
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function runConflictResponseSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'error' => ['type' => 'string'],
+                'conflict' => self::runSummarySchema(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function runSummarySchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'id' => ['type' => 'string'],
+                'task' => ['type' => 'string'],
+                'status' => ['type' => 'string', 'enum' => ['pending', 'running']],
+                'locks' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'payload' => ['type' => 'object'],
+                'createdAt' => ['type' => 'integer'],
+                'startedAt' => ['type' => ['integer', 'null']],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public static function taskStatusResponseSchema(): array
     {
         return self::taskExecutionResponseSchema(includeId: true);

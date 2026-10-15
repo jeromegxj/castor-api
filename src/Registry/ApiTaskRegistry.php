@@ -31,6 +31,7 @@ final class ApiTaskRegistry
             workingDirectory: $workingDirectory,
             async: $api->async,
             schema: $schema,
+            locks: array_values(array_filter((array) $api->lock, static fn (string $lock): bool => '' !== trim($lock))),
         );
     }
 

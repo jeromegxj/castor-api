@@ -45,8 +45,23 @@ Tasks with `async: true` get `/start` and `/status/{runId}` routes in addition t
 | `methods`      | `['POST']` | HTTP methods for the synchronous `/run` endpoint          |
 | `exposeSchema` | `true`     | Export task parameters in the OpenAPI request body schema |
 | `async`        | `false`    | Also expose `/start` and `/status/{runId}` endpoints      |
+| `lock`         | `[]`       | Lock key(s) held while an async run is active (see below) |
 
 Set `exposeSchema: false` for parameterless tasks that should not appear with a request body in OpenAPI.
+
+### Locks
+
+Tasks that must not run at the same time declare lock keys. `{name}` is replaced by the `name` value of the JSON body:
+
+```php
+#[AsApi(async: true, lock: 'shop:{project}')]
+function generate(#[AsOption] ?string $project = null): void {}
+
+#[AsApi(async: true, lock: ['shop:{project}', 'database'])]
+function load(#[AsOption] ?string $project = null): void {}
+```
+
+An async run holds its keys while it is `pending` or `running`. Starting a run (`/start` or `/run`) whose keys overlap with an active run returns `409 Conflict`. Here, `generate` and `load` of the same project exclude each other, and two `load` runs never overlap. A key whose placeholder has no value in the body is dropped. Re-export OpenAPI after changing locks: they are stored in the spec as `x-castor-locks`.
 
 ### JSON body mapping
 
@@ -170,6 +185,7 @@ User=deploy
 | POST   | `/tasks/{name}/run`            | Run task synchronously (JSON body = task arguments and options). Returns `422` when the task exits with a non-zero code. |
 | POST   | `/tasks/{name}/start`          | Start async run (only for `#[AsApi(async: true)]` tasks)                                                                 |
 | GET    | `/tasks/{name}/status/{runId}` | Poll async run status and result. Returns `422` when the run ends with `status: failed`.                                 |
+| GET    | `/runs`                        | List the async runs that are `pending` or `running`, oldest first                                                        |
 
 Namespaced tasks use a colon in the path (e.g. `demo:hello` → `/tasks/demo:hello/run`).
 
@@ -196,7 +212,15 @@ Failures are reported on `/status` (HTTP `422` when `status` is `failed`), not o
 
 Async state is stored as JSON in `.castor/api/runs/{runId}.json`, and the worker's own output (PHP errors, crashes) in `.castor/api/runs/{runId}.log`. Runs older than 24 hours are removed when a new async run starts.
 
-The worker records its PID. When `/status` finds a `running` run whose worker is gone (killed, crashed, host rebooted), or a run still `pending` after 2 minutes, it marks it `failed` and appends the worker log to `stderr`.
+`GET /runs` returns `{"runs": [{"id", "task", "status", "locks", "payload", "createdAt", "startedAt"}]}`.
+
+When a lock is held, `/start` and `/run` answer `409` with the run holding it:
+
+```json
+{ "error": "Cannot start \"demo:load\": ...", "conflict": { "id": "uuid", "task": "demo:generate", "status": "running", "locks": ["shop:acme"], ... } }
+```
+
+The worker records its PID. When `/status` or `/runs` finds a `running` run whose worker is gone (killed, crashed, host rebooted), or a run still `pending` after 2 minutes, it marks it `failed` and appends the worker log to `stderr`.
 
 ### Examples
 
