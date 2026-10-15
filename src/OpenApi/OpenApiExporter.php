@@ -38,6 +38,23 @@ final class OpenApiExporter
             ],
         ];
 
+        $paths['/runs'] = [
+            'get' => [
+                'operationId' => 'castor.runs',
+                'description' => 'List the async runs that are pending or running',
+                'responses' => [
+                    '200' => [
+                        'description' => 'Active runs',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => OpenApiSchemaBuilder::activeRunsResponseSchema(),
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
         $endpoints = ApiTaskRegistry::all();
         uasort($endpoints, static fn (ApiEndpoint $a, ApiEndpoint $b): int => strcmp($a->taskName, $b->taskName));
 
@@ -94,7 +111,7 @@ final class OpenApiExporter
     {
         $responseSchema = OpenApiSchemaBuilder::taskRunResponseSchema();
 
-        return self::addTaskFailureResponse(
+        return self::addLocks($endpoint, self::addTaskFailureResponse(
             self::buildTaskOperation(
                 endpoint: $endpoint,
                 projectRoot: $projectRoot,
@@ -105,7 +122,7 @@ final class OpenApiExporter
                 responseCode: '200',
             ),
             $responseSchema,
-        );
+        ));
     }
 
     /**
@@ -113,7 +130,7 @@ final class OpenApiExporter
      */
     private static function buildStartOperation(ApiEndpoint $endpoint, string $projectRoot): array
     {
-        return self::buildTaskOperation(
+        $operation = self::buildTaskOperation(
             endpoint: $endpoint,
             projectRoot: $projectRoot,
             operationId: $endpoint->taskName . '.start',
@@ -122,6 +139,32 @@ final class OpenApiExporter
             responseDescription: 'Async run accepted',
             responseCode: '202',
         );
+
+        return self::addLocks($endpoint, $operation);
+    }
+
+    /**
+     * @param array<string, mixed> $operation
+     *
+     * @return array<string, mixed>
+     */
+    private static function addLocks(ApiEndpoint $endpoint, array $operation): array
+    {
+        if ([] === $endpoint->locks) {
+            return $operation;
+        }
+
+        $operation[CastorSchemaExtensions::LOCKS] = $endpoint->locks;
+        $operation['responses']['409'] = [
+            'description' => 'A run holding the same lock is pending or running',
+            'content' => [
+                'application/json' => [
+                    'schema' => OpenApiSchemaBuilder::runConflictResponseSchema(),
+                ],
+            ],
+        ];
+
+        return $operation;
     }
 
     /**

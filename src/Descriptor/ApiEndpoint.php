@@ -9,6 +9,7 @@ final class ApiEndpoint
     /**
      * @param list<string>              $methods
      * @param array<string, mixed>|null $schema
+     * @param list<string>              $locks
      */
     public function __construct(
         public readonly string $taskName,
@@ -18,6 +19,7 @@ final class ApiEndpoint
         public readonly ?string $workingDirectory,
         public readonly bool $async,
         public ?array $schema = null,
+        public readonly array $locks = [],
     ) {
     }
 }

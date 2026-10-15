@@ -7,7 +7,9 @@ namespace Castor\Api\Run;
 final class RunRecord
 {
     /**
-     * @param list<string> $cliArgs
+     * @param list<string>         $cliArgs
+     * @param list<string>         $locks
+     * @param array<string, mixed> $payload
      */
     public function __construct(
         public readonly string $id,
@@ -25,6 +27,8 @@ final class RunRecord
         public ?string $stderr = null,
         public ?int $durationMs = null,
         public ?int $pid = null,
+        public readonly array $locks = [],
+        public readonly array $payload = [],
     ) {
     }
 
@@ -49,6 +53,8 @@ final class RunRecord
             'stderr' => $this->stderr,
             'durationMs' => $this->durationMs,
             'pid' => $this->pid,
+            'locks' => $this->locks,
+            'payload' => $this->payload,
         ];
     }
 
@@ -73,6 +79,8 @@ final class RunRecord
             stderr: isset($data['stderr']) && \is_string($data['stderr']) ? $data['stderr'] : null,
             durationMs: isset($data['durationMs']) ? (int) $data['durationMs'] : null,
             pid: isset($data['pid']) ? (int) $data['pid'] : null,
+            locks: array_values(array_map(strval(...), \is_array($data['locks'] ?? null) ? $data['locks'] : [])),
+            payload: \is_array($data['payload'] ?? null) ? $data['payload'] : [],
         );
     }
 
@@ -85,6 +93,27 @@ final class RunRecord
             'id' => $this->id,
             'task' => $this->task,
             'status' => $this->status->value,
+        ];
+    }
+
+    public function isActive(): bool
+    {
+        return \in_array($this->status, [RunStatus::Pending, RunStatus::Running], true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toSummaryResponse(): array
+    {
+        return [
+            'id' => $this->id,
+            'task' => $this->task,
+            'status' => $this->status->value,
+            'locks' => $this->locks,
+            'payload' => $this->payload,
+            'createdAt' => $this->createdAt,
+            'startedAt' => $this->startedAt,
         ];
     }
 

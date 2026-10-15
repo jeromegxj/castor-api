@@ -56,6 +56,23 @@ final class OpenApiExporterTest extends TestCase
         self::assertSame('demo:slow.status', $paths['/tasks/demo%3Aslow/status/{runId}']->get->operationId);
     }
 
+    public function testLocksAndRunsListAreExported(): void
+    {
+        ApiTaskRegistry::registerEndpoint(
+            taskName: 'shop:generate',
+            api: new AsApi(async: true, lock: 'shop:{project}'),
+            description: 'Generate',
+            workingDirectory: null,
+        );
+
+        $paths = OpenApiExporter::build('/tmp/project')->paths;
+        $start = $paths['/tasks/shop%3Agenerate/start']->post;
+
+        self::assertSame(['shop:{project}'], $start->getExtensions()['x-castor-locks'] ?? null);
+        self::assertTrue(isset($start->responses['409']));
+        self::assertSame('castor.runs', $paths['/runs']->get->operationId);
+    }
+
     public function testSyncEndpointExportsRunPathOnly(): void
     {
         ApiTaskRegistry::registerEndpoint(
