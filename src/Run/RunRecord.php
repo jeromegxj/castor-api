@@ -24,6 +24,7 @@ final class RunRecord
         public ?string $stdout = null,
         public ?string $stderr = null,
         public ?int $durationMs = null,
+        public ?int $pid = null,
     ) {
     }
 
@@ -47,6 +48,7 @@ final class RunRecord
             'stdout' => $this->stdout,
             'stderr' => $this->stderr,
             'durationMs' => $this->durationMs,
+            'pid' => $this->pid,
         ];
     }
 
@@ -70,6 +72,7 @@ final class RunRecord
             stdout: isset($data['stdout']) && \is_string($data['stdout']) ? $data['stdout'] : null,
             stderr: isset($data['stderr']) && \is_string($data['stderr']) ? $data['stderr'] : null,
             durationMs: isset($data['durationMs']) ? (int) $data['durationMs'] : null,
+            pid: isset($data['pid']) ? (int) $data['pid'] : null,
         );
     }
 

@@ -25,7 +25,8 @@ final class TaskStatusHandler
             return new JsonResponse(['error' => 'Missing run identifier.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $record = new RunStore($loader->getProjectRoot())->get($runId);
+        $store = new RunStore($loader->getProjectRoot());
+        $record = $store->get($runId);
 
         if (null === $record) {
             return new JsonResponse(['error' => 'Run not found.'], Response::HTTP_NOT_FOUND);
@@ -34,6 +35,8 @@ final class TaskStatusHandler
         if ($record->task !== $operation->taskName) {
             return new JsonResponse(['error' => 'Run not found.'], Response::HTTP_NOT_FOUND);
         }
+
+        $record = $store->failIfLost($record);
 
         return new JsonResponse(
             $record->toStatusResponse(),

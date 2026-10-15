@@ -100,6 +100,8 @@ Serve with Nginx, FrankenPHP, or PHP-FPM using the package front controller at `
 | `CASTOR_API_PACKAGE_ROOT` | Absolute path to the installed `jeromegxj/castor-api` package       |
 | `CASTOR_API_TOKEN`        | Bearer token required on every request (recommended in production) |
 | `CASTOR_BINARY`           | Castor binary name or path (default: `castor`)                     |
+| `CASTOR_API_PHP_BINARY`   | PHP CLI used to launch async workers (default: `PHP_BINARY` under the CLI SAPIs, `php` otherwise). Required under FPM/FrankenPHP |
+| `CASTOR_API_TASK_TIMEOUT` | Kill a task after this many seconds (default: `0`, no timeout)      |
 
 The project root is inferred from the OpenAPI path (`{projectRoot}/.castor/api/openapi.json`).
 
@@ -136,7 +138,28 @@ my-project.example.com {
 }
 ```
 
-The PHP worker must be able to execute the Castor binary.
+The PHP worker must be able to execute the Castor binary. Under FPM, the pool's `clear_env` hides the environment from the Castor subprocess: set `clear_env = no` or pass what the tasks need with `env[...]`.
+
+### systemd with the built-in server
+
+For an API only reachable from the same host (an admin app calling it on localhost), the PHP built-in server under systemd avoids the FPM caveats above:
+
+```ini
+[Service]
+WorkingDirectory=/var/www/my-project
+Environment=CASTOR_API_OPENAPI=/var/www/my-project/.castor/api/openapi.json
+Environment=CASTOR_API_PACKAGE_ROOT=/var/www/my-project/.castor/vendor/jeromegxj/castor-api
+Environment=CASTOR_BINARY=/usr/local/bin/castor
+Environment=PHP_CLI_SERVER_WORKERS=4
+EnvironmentFile=/var/www/my-project/castor-api.env
+ExecStart=/usr/bin/php -S 127.0.0.1:8080 -t ${CASTOR_API_PACKAGE_ROOT}/resources ${CASTOR_API_PACKAGE_ROOT}/resources/front-controller.php
+# Async workers are detached children: keep them running when the API restarts.
+KillMode=process
+Restart=always
+User=deploy
+```
+
+`PHP_CLI_SERVER_WORKERS` lets status polls go through while a synchronous run is in progress. Re-run `castor api:export-openapi` on each deploy before restarting the unit.
 
 ## HTTP API
 
@@ -171,7 +194,9 @@ For `#[AsApi(async: true)]` tasks:
 
 Failures are reported on `/status` (HTTP `422` when `status` is `failed`), not on `/start`. While running, `exitCode`, `stdout`, `stderr`, and `durationMs` are `null`.
 
-Async state is stored as JSON in `.castor/api/runs/{runId}.json`. Runs older than 24 hours are removed when a new async run starts.
+Async state is stored as JSON in `.castor/api/runs/{runId}.json`, and the worker's own output (PHP errors, crashes) in `.castor/api/runs/{runId}.log`. Runs older than 24 hours are removed when a new async run starts.
+
+The worker records its PID. When `/status` finds a `running` run whose worker is gone (killed, crashed, host rebooted), or a run still `pending` after 2 minutes, it marks it `failed` and appends the worker log to `stderr`.
 
 ### Examples
 

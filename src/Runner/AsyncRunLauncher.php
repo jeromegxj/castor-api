@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Castor\Api\Runner;
 
 use Castor\Api\Helper\JsonSchemaToCli;
+use Castor\Api\Helper\PhpBinary;
 use Castor\Api\OpenApi\OpenApiLoader;
 use Castor\Api\OpenApi\OperationContext;
 use Castor\Api\Run\RunRecord;
@@ -50,22 +51,40 @@ final class AsyncRunLauncher
             'CASTOR_API_PACKAGE_ROOT' => $this->packageRoot,
         ];
 
-        $command = \sprintf(
-            '%s %s %s %s',
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            throw new \RuntimeException('Async task execution is not supported on Windows.');
+        }
+
+        exec(self::buildWorkerCommand(
+            $environment,
+            PhpBinary::resolve(),
+            $workerScript,
+            $runId,
+            RunStore::logPathFor($this->loader->getProjectRoot(), $runId),
+        ));
+    }
+
+    /**
+     * @param array<string, string> $environment
+     */
+    public static function buildWorkerCommand(
+        array $environment,
+        string $phpBinary,
+        string $workerScript,
+        string $runId,
+        string $logFile,
+    ): string {
+        return \sprintf(
+            '%s %s %s %s >> %s 2>&1 &',
             implode(' ', array_map(
                 static fn (string $key, string $value): string => $key . '=' . escapeshellarg($value),
                 array_keys($environment),
                 array_values($environment),
             )),
-            escapeshellarg(PHP_BINARY),
+            escapeshellarg($phpBinary),
             escapeshellarg($workerScript),
             escapeshellarg($runId),
+            escapeshellarg($logFile),
         );
-
-        if ('\\' === \DIRECTORY_SEPARATOR) {
-            throw new \RuntimeException('Async task execution is not supported on Windows.');
-        }
-
-        exec($command . ' > /dev/null 2>&1 &');
     }
 }

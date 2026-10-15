@@ -12,6 +12,7 @@ final class RunExecutor
     {
         $record->status = RunStatus::Running;
         $record->startedAt = time();
+        $record->pid = getmypid() ?: null;
 
         $store = new RunStore($record->projectRoot);
         $store->save($record);
