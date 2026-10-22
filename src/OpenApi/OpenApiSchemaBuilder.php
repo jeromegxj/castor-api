@@ -27,11 +27,8 @@ final class OpenApiSchemaBuilder
 
         foreach ($castorSchema['options'] as $option) {
             $name = (string) $option['name'];
+            // An option is never mandatory: "isValueRequired" only means it takes a value when given.
             $properties[$name] = self::propertyFromOption($option);
-
-            if (($option['isValueRequired'] ?? false) === true) {
-                $required[] = $name;
-            }
         }
 
         $argumentNames = array_map(
