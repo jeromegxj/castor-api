@@ -81,10 +81,22 @@ final class SubprocessTaskRunner
             2 => ['pipe', 'w'],
         ];
 
-        $process = proc_open($command, $descriptorSpec, $pipes, $cwd, self::subprocessEnvironment());
+        // proc_open() reports why it failed as a PHP warning: capture it for the error message.
+        $startError = null;
+        set_error_handler(static function (int $severity, string $message) use (&$startError): bool {
+            $startError = $message;
+
+            return true;
+        });
+
+        try {
+            $process = proc_open($command, $descriptorSpec, $pipes, $cwd, self::subprocessEnvironment());
+        } finally {
+            restore_error_handler();
+        }
 
         if (!\is_resource($process)) {
-            throw new \RuntimeException('Unable to start Castor subprocess.');
+            throw new \RuntimeException(rtrim('Unable to start Castor subprocess: ' . $startError, ': '));
         }
 
         fclose($pipes[0]);
