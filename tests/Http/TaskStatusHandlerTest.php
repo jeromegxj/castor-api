@@ -10,39 +10,30 @@ use Castor\Api\OpenApi\OperationContext;
 use Castor\Api\OpenApi\OperationKind;
 use Castor\Api\Run\RunStatus;
 use Castor\Api\Run\RunStore;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class TaskStatusHandlerTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     private string $projectRoot;
 
     protected function setUp(): void
     {
-        $this->projectRoot = sys_get_temp_dir() . '/castor-api-status-' . uniqid('', true);
-        mkdir($this->projectRoot . '/.castor/api/runs', 0o777, true);
+        $this->projectRoot = self::createTemporaryProject('status');
     }
 
     protected function tearDown(): void
     {
-        $runsDir = $this->projectRoot . '/.castor/api/runs';
-
-        if (is_dir($runsDir)) {
-            foreach (glob($runsDir . '/*.json') ?: [] as $file) {
-                unlink($file);
-            }
-
-            rmdir($runsDir);
-            rmdir($this->projectRoot . '/.castor/api');
-            rmdir($this->projectRoot . '/.castor');
-            rmdir($this->projectRoot);
-        }
+        self::removeDirectory($this->projectRoot);
     }
 
     public function testReturnsPendingRun(): void

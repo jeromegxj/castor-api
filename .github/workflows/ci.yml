@@ -1,0 +1,103 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    tests:
+        name: Tests (PHP ${{ matrix.php }}, ${{ matrix.dependencies }} deps)
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - php: '8.4'
+                      dependencies: lowest
+                    - php: '8.4'
+                      dependencies: highest
+                    - php: '8.5'
+                      dependencies: highest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  coverage: none
+
+            - uses: ramsey/composer-install@v3
+              with:
+                  dependency-versions: ${{ matrix.dependencies }}
+
+            - run: composer test
+
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  coverage: none
+
+            - uses: ramsey/composer-install@v3
+
+            - name: Install Castor
+              run: |
+                  mkdir -p "$RUNNER_TEMP/bin"
+                  curl -fsSL -o "$RUNNER_TEMP/bin/castor" https://github.com/jolicode/castor/releases/download/v1.9.1/castor.linux-amd64.phar
+                  chmod +x "$RUNNER_TEMP/bin/castor"
+                  echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+            # PHPStan reads the Castor API from the stub Castor writes on its first run.
+            - run: castor list --no-interaction > /dev/null
+
+            - run: composer phpstan -- --no-progress --error-format=github
+
+    castor:
+        name: Castor integration
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  coverage: none
+
+            - uses: ramsey/composer-install@v3
+
+            - name: Install Castor
+              run: |
+                  mkdir -p "$RUNNER_TEMP/bin"
+                  curl -fsSL -o "$RUNNER_TEMP/bin/castor" https://github.com/jolicode/castor/releases/download/v1.9.1/castor.linux-amd64.phar
+                  chmod +x "$RUNNER_TEMP/bin/castor"
+                  echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+            - run: composer test -- --group castor
+
+    cs:
+        name: Coding standards
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  coverage: none
+
+            - uses: ramsey/composer-install@v3
+
+            - run: composer cs

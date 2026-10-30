@@ -8,25 +8,27 @@ use Castor\Api\Http\Router;
 use Castor\Api\Http\TaskStartHandler;
 use Castor\Api\OpenApi\OpenApiLoader;
 use Castor\Api\Run\RunStore;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class RunEndpointsTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     private string $projectRoot;
 
     private OpenApiLoader $loader;
 
     protected function setUp(): void
     {
-        $this->projectRoot = sys_get_temp_dir() . '/castor-api-run-endpoints-' . uniqid('', true);
-        mkdir($this->projectRoot . '/.castor/api/runs', 0o777, true);
+        $this->projectRoot = self::createTemporaryProject('run-endpoints');
 
         file_put_contents($this->projectRoot . '/.castor/api/openapi.json', json_encode([
             'openapi' => '3.1.0',
@@ -53,16 +55,7 @@ final class RunEndpointsTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (glob($this->projectRoot . '/.castor/api/{runs/,runs/.,}*', GLOB_BRACE) ?: [] as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
-        }
-
-        rmdir($this->projectRoot . '/.castor/api/runs');
-        rmdir($this->projectRoot . '/.castor/api');
-        rmdir($this->projectRoot . '/.castor');
-        rmdir($this->projectRoot);
+        self::removeDirectory($this->projectRoot);
     }
 
     public function testRunsListsTheActiveRuns(): void

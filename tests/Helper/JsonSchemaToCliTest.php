@@ -6,14 +6,14 @@ namespace Castor\Api\Tests\Helper;
 
 use Castor\Api\Helper\JsonSchemaToCli;
 use Castor\Api\OpenApi\CastorSchemaExtensions;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class JsonSchemaToCliTest extends TestCase
 {
     #[DataProvider('provideConvertCases')]

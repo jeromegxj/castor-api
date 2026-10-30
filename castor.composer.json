@@ -1,6 +1,6 @@
 {
     "require": {
-        "cebe/php-openapi": "^1.8",
+        "devizzent/cebe-php-openapi": "^1.1.5",
         "symfony/console": "^7.4|^8.0",
         "symfony/http-foundation": "^7.4|^8.0",
         "symfony/routing": "^7.4|^8.0",

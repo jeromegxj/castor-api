@@ -31,7 +31,7 @@ final class OpenApiLoader
     public function __construct(
         private readonly string $filePath,
     ) {
-        $json = file_get_contents($filePath);
+        $json = is_file($filePath) ? file_get_contents($filePath) : false;
 
         if (false === $json) {
             throw new \RuntimeException(\sprintf('Unable to read OpenAPI spec at "%s".', $filePath));

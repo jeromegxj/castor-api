@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace castor_api\task;
 
-use Castor\Attribute\AsOption;
-use Castor\Attribute\AsTask;
 use Castor\Api\Helper\AuthToken;
 use Castor\Api\Helper\RoutingExporter;
+use Castor\Attribute\AsOption;
+use Castor\Attribute\AsTask;
 
 use function Castor\context;
 use function Castor\io;

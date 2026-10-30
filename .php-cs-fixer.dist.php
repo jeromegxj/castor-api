@@ -1,8 +1,10 @@
 <?php
 
 declare(strict_types=1);
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
 
-$finder = PhpCsFixer\Finder::create()
+$finder = Finder::create()
     ->ignoreVCSIgnored(true)
     ->in(__DIR__ . '/src')
     ->in(__DIR__ . '/resources')
@@ -13,7 +15,7 @@ $finder = PhpCsFixer\Finder::create()
     ])
 ;
 
-return new PhpCsFixer\Config()
+return new Config()
     ->setUnsupportedPhpVersionAllowed(true)
     ->setRiskyAllowed(true)
     ->setRules([
@@ -28,6 +30,8 @@ return new PhpCsFixer\Config()
             'import_constants' => false,
             'import_functions' => null,
         ],
+        'fully_qualified_strict_types' => ['import_symbols' => true],
+        'php_unit_attributes' => true,
         'native_function_invocation' => [
             'include' => ['@compiler_optimized'],
             'scope' => 'namespaced',
