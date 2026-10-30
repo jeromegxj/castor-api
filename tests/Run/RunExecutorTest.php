@@ -7,37 +7,28 @@ namespace Castor\Api\Tests\Run;
 use Castor\Api\Run\RunExecutor;
 use Castor\Api\Run\RunStatus;
 use Castor\Api\Run\RunStore;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class RunExecutorTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     private string $projectRoot;
 
     protected function setUp(): void
     {
-        $this->projectRoot = sys_get_temp_dir() . '/castor-api-executor-' . uniqid('', true);
-        mkdir($this->projectRoot . '/.castor/api/runs', 0o777, true);
+        $this->projectRoot = self::createTemporaryProject('executor');
     }
 
     protected function tearDown(): void
     {
-        $runsDir = $this->projectRoot . '/.castor/api/runs';
-
-        if (is_dir($runsDir)) {
-            foreach (glob($runsDir . '/*.json') ?: [] as $file) {
-                unlink($file);
-            }
-
-            rmdir($runsDir);
-            rmdir($this->projectRoot . '/.castor/api');
-            rmdir($this->projectRoot . '/.castor');
-            rmdir($this->projectRoot);
-        }
+        self::removeDirectory($this->projectRoot);
     }
 
     public function testMarksRunAsFailedWhenCastorBinaryIsInvalid(): void
@@ -57,7 +48,7 @@ final class RunExecutorTest extends TestCase
         self::assertSame(RunStatus::Failed, $result->status);
         self::assertSame(RunStatus::Failed, $persisted->status);
         self::assertSame(1, $result->exitCode);
-        self::assertNotNull($result->stderr);
+        self::assertStringStartsWith('Unable to start Castor subprocess: ', (string) $result->stderr);
         self::assertNotNull($result->finishedAt);
     }
 }

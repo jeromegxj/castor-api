@@ -6,15 +6,15 @@ namespace Castor\Api\Tests\Http;
 
 use Castor\Api\Http\TaskHttpStatus;
 use Castor\Api\Run\RunStatus;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class TaskHttpStatusTest extends TestCase
 {
     public function testFromExitCodeReturnsOkForSuccess(): void

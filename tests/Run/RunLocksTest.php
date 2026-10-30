@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Castor\Api\Tests\Run;
 
 use Castor\Api\Run\RunLocks;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class RunLocksTest extends TestCase
 {
     public function testPlaceholdersAreReplacedByPayloadValues(): void

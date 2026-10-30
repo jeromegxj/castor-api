@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace castor_api\listener;
 
-use Castor\Attribute\AsListener;
-use Castor\Console\Command\TaskCommand;
-use Castor\Event\AfterBootEvent;
 use Castor\Api\Attribute\AsApi;
 use Castor\Api\Helper\SchemaExporter;
 use Castor\Api\Registry\ApiTaskRegistry;
+use Castor\Attribute\AsListener;
+use Castor\Console\Command\TaskCommand;
+use Castor\Event\AfterBootEvent;
 
 #[AsListener(event: AfterBootEvent::class)]
 function register_api_tasks(AfterBootEvent $event): void

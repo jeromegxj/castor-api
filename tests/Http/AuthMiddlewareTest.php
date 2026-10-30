@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Castor\Api\Tests\Http;
 
 use Castor\Api\Http\AuthMiddleware;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class AuthMiddlewareTest extends TestCase
 {
     public function testAllowsRequestWhenNoTokenConfigured(): void

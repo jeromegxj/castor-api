@@ -6,26 +6,28 @@ namespace Castor\Api\Tests\Http;
 
 use Castor\Api\Http\Router;
 use Castor\Api\OpenApi\OpenApiLoader;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class RouterTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     private string $projectRoot;
 
     private OpenApiLoader $loader;
 
     protected function setUp(): void
     {
-        $this->projectRoot = sys_get_temp_dir() . '/castor-api-router-' . uniqid('', true);
+        $this->projectRoot = self::createTemporaryProject('router');
         $openapiDir = $this->projectRoot . '/.castor/api';
-        mkdir($openapiDir, 0o777, true);
 
         file_put_contents($openapiDir . '/openapi.json', json_encode([
             'openapi' => '3.1.0',
@@ -51,14 +53,7 @@ final class RouterTest extends TestCase
 
     protected function tearDown(): void
     {
-        $openapiDir = $this->projectRoot . '/.castor/api';
-
-        if (is_dir($openapiDir)) {
-            unlink($openapiDir . '/openapi.json');
-            rmdir($openapiDir);
-            rmdir($this->projectRoot . '/.castor');
-            rmdir($this->projectRoot);
-        }
+        self::removeDirectory($this->projectRoot);
     }
 
     public function testReturnsNotFoundForUnknownRoute(): void

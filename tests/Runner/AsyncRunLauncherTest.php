@@ -6,13 +6,13 @@ namespace Castor\Api\Tests\Runner;
 
 use Castor\Api\Helper\PhpBinary;
 use Castor\Api\Runner\AsyncRunLauncher;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class AsyncRunLauncherTest extends TestCase
 {
     protected function tearDown(): void
@@ -45,8 +45,8 @@ final class AsyncRunLauncherTest extends TestCase
 
     public function testPhpBinaryIsOnlyTrustedUnderCli(): void
     {
-        self::assertSame(\PHP_BINARY, PhpBinary::resolve('cli'));
-        self::assertSame(\PHP_BINARY, PhpBinary::resolve('cli-server'));
+        self::assertSame(PHP_BINARY, PhpBinary::resolve('cli'));
+        self::assertSame(PHP_BINARY, PhpBinary::resolve('cli-server'));
         self::assertSame('php', PhpBinary::resolve('fpm-fcgi'));
         self::assertSame('php', PhpBinary::resolve('frankenphp'));
     }

@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace Castor\Api\Tests\OpenApi;
 
-use cebe\openapi\Reader;
-use cebe\openapi\spec\Operation;
-use cebe\openapi\spec\Schema;
 use Castor\Api\OpenApi\CastorSchemaExtensions;
 use Castor\Api\OpenApi\OpenApiLoader;
 use Castor\Api\OpenApi\OpenApiSchemaBuilder;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use cebe\openapi\Reader;
+use cebe\openapi\spec\Operation;
+use cebe\openapi\spec\Schema;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class OpenApiSchemaBuilderTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     public function testFromCastorSchemaExportsArgumentsAndOptionsExtensions(): void
     {
         $schema = OpenApiSchemaBuilder::fromCastorSchema([
@@ -135,9 +138,8 @@ final class OpenApiSchemaBuilderTest extends TestCase
         self::assertSame(['arg'], $requestSchema->getExtensions()[CastorSchemaExtensions::ARGUMENTS] ?? null);
         self::assertSame(['name'], $requestSchema->getExtensions()[CastorSchemaExtensions::OPTIONS] ?? null);
 
-        $projectRoot = sys_get_temp_dir() . '/castor-api-test-' . uniqid('', true);
+        $projectRoot = self::createTemporaryProject('schema');
         $openapiDir = $projectRoot . '/.castor/api';
-        mkdir($openapiDir, 0o777, true);
         $openapiPath = $openapiDir . '/openapi.json';
         file_put_contents($openapiPath, json_encode([
             'openapi' => '3.1.0',
@@ -168,5 +170,7 @@ final class OpenApiSchemaBuilderTest extends TestCase
         self::assertSame('hello', $context->taskName);
         self::assertSame(['arg'], $context->requestSchema[CastorSchemaExtensions::ARGUMENTS] ?? null);
         self::assertSame(['name'], $context->requestSchema[CastorSchemaExtensions::OPTIONS] ?? null);
+
+        self::removeDirectory($projectRoot);
     }
 }

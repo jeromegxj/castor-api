@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Castor\Api\Helper;
 
 use Castor\Api\OpenApi\OpenApiExporter;
+use Castor\Api\Registry\ApiTaskRegistry;
 
 final class RoutingExporter
 {
@@ -15,6 +16,6 @@ final class RoutingExporter
 
     public static function countTasks(): int
     {
-        return \count(\Castor\Api\Registry\ApiTaskRegistry::all());
+        return \count(ApiTaskRegistry::all());
     }
 }

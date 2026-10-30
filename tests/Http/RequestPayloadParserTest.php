@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Castor\Api\Tests\Http;
 
 use Castor\Api\Http\RequestPayloadParser;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class RequestPayloadParserTest extends TestCase
 {
     public function testParsesEmptyBodyAsEmptyArray(): void

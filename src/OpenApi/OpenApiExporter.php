@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Castor\Api\OpenApi;
 
-use cebe\openapi\spec\OpenApi;
-use cebe\openapi\Writer;
 use Castor\Api\Descriptor\ApiEndpoint;
 use Castor\Api\Helper\Paths;
 use Castor\Api\Helper\TaskName;
 use Castor\Api\Registry\ApiTaskRegistry;
+use cebe\openapi\spec\OpenApi;
+use cebe\openapi\Writer;
 
 final class OpenApiExporter
 {

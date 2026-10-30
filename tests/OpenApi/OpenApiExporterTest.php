@@ -9,16 +9,19 @@ use Castor\Api\OpenApi\OpenApiExporter;
 use Castor\Api\OpenApi\OpenApiLoader;
 use Castor\Api\OpenApi\OperationKind;
 use Castor\Api\Registry\ApiTaskRegistry;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class OpenApiExporterTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     protected function tearDown(): void
     {
         ApiTaskRegistry::reset();
@@ -127,9 +130,8 @@ final class OpenApiExporterTest extends TestCase
 
     public function testStatusRouteExtractsRunId(): void
     {
-        $projectRoot = sys_get_temp_dir() . '/castor-api-openapi-' . uniqid('', true);
+        $projectRoot = self::createTemporaryProject('openapi');
         $openapiDir = $projectRoot . '/.castor/api';
-        mkdir($openapiDir, 0o777, true);
 
         file_put_contents($openapiDir . '/openapi.json', json_encode([
             'openapi' => '3.1.0',
@@ -160,16 +162,13 @@ final class OpenApiExporterTest extends TestCase
         self::assertSame('demo:slow', $context->taskName);
         self::assertSame('abc-123', $context->runId);
 
-        rmdir($openapiDir);
-        rmdir($projectRoot . '/.castor');
-        rmdir($projectRoot);
+        self::removeDirectory($projectRoot);
     }
 
     public function testEncodedOpenApiPathsMatchDecodedRequests(): void
     {
-        $projectRoot = sys_get_temp_dir() . '/castor-api-openapi-encoded-' . uniqid('', true);
+        $projectRoot = self::createTemporaryProject('openapi-encoded');
         $openapiDir = $projectRoot . '/.castor/api';
-        mkdir($openapiDir, 0o777, true);
 
         file_put_contents($openapiDir . '/openapi.json', json_encode([
             'openapi' => '3.1.0',
@@ -192,8 +191,6 @@ final class OpenApiExporterTest extends TestCase
         self::assertNotNull($context);
         self::assertSame('sylius:import:list', $context->taskName);
 
-        rmdir($openapiDir);
-        rmdir($projectRoot . '/.castor');
-        rmdir($projectRoot);
+        self::removeDirectory($projectRoot);
     }
 }

@@ -24,7 +24,7 @@ final class PhpBinary
         $sapi ??= \PHP_SAPI;
 
         if (\in_array($sapi, ['cli', 'cli-server'], true)) {
-            return \PHP_BINARY;
+            return PHP_BINARY;
         }
 
         return 'php';

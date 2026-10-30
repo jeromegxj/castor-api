@@ -7,35 +7,28 @@ namespace Castor\Api\Tests\Run;
 use Castor\Api\Run\RunConflictException;
 use Castor\Api\Run\RunStatus;
 use Castor\Api\Run\RunStore;
+use Castor\Api\Tests\TemporaryProjectTrait;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 final class RunStoreLockTest extends TestCase
 {
+    use TemporaryProjectTrait;
+
     private string $projectRoot;
 
     protected function setUp(): void
     {
-        $this->projectRoot = sys_get_temp_dir() . '/castor-api-locks-' . uniqid('', true);
-        mkdir($this->projectRoot . '/.castor/api/runs', 0o777, true);
+        $this->projectRoot = self::createTemporaryProject('locks');
     }
 
     protected function tearDown(): void
     {
-        foreach (glob($this->projectRoot . '/.castor/api/runs/{,.}*', GLOB_BRACE) ?: [] as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
-        }
-
-        rmdir($this->projectRoot . '/.castor/api/runs');
-        rmdir($this->projectRoot . '/.castor/api');
-        rmdir($this->projectRoot . '/.castor');
-        rmdir($this->projectRoot);
+        self::removeDirectory($this->projectRoot);
     }
 
     public function testRunSharingALockWithAnActiveRunIsRefused(): void
