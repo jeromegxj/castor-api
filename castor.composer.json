@@ -12,6 +12,13 @@
         }
     },
     "config": {
+        "policy": {
+            "advisories": {
+                "ignore-id": {
+                    "PKSA-nktx-f1n1-b4yd": "symfony/yaml v8.1.10 is bundled in the Castor 1.9.1 phar and castor-api never parses YAML. Remove once CI runs Castor 1.9.2+."
+                }
+            }
+        },
         "sort-packages": true
     }
 }
