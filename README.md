@@ -1,5 +1,9 @@
 # jeromegxj/castor-api
 
+[![Latest Version](https://img.shields.io/packagist/v/jeromegxj/castor-api.svg)](https://packagist.org/packages/jeromegxj/castor-api)
+[![CI](https://github.com/jeromegxj/castor-api/actions/workflows/ci.yml/badge.svg)](https://github.com/jeromegxj/castor-api/actions/workflows/ci.yml)
+[![License](https://img.shields.io/packagist/l/jeromegxj/castor-api.svg)](LICENSE)
+
 Expose [Castor](https://castor.jolicode.com) tasks over HTTP. Only functions marked with both `#[AsTask]` and `#[AsApi]` are published.
 
 The package works in three layers:
@@ -10,10 +14,22 @@ The package works in three layers:
 
 ## Installation
 
+Requirements: PHP 8.4+ and [Castor](https://castor.jolicode.com) 1.7+.
+
 In your project's `castor.php`:
 
 ```php
 import('composer://jeromegxj/castor-api');
+```
+
+To pin the version, require it in your project's `castor.composer.json`:
+
+```json
+{
+    "require": {
+        "jeromegxj/castor-api": "^0.1"
+    }
+}
 ```
 
 Mark tasks you want to expose:

@@ -2,13 +2,22 @@
     "name": "jeromegxj/castor-api",
     "description": "Expose Castor tasks marked with #[AsApi] over HTTP",
     "type": "library",
+    "keywords": ["castor", "api", "openapi", "http", "task-runner"],
+    "homepage": "https://github.com/jeromegxj/castor-api",
     "license": "MIT",
     "authors": [
         {
-            "name": "Jolicode",
-            "email": "contact@jolicode.com"
+            "name": "Jérôme Gangneux",
+            "email": "jgangneux@jolicode.com"
         }
     ],
+    "support": {
+        "issues": "https://github.com/jeromegxj/castor-api/issues",
+        "source": "https://github.com/jeromegxj/castor-api"
+    },
+    "suggest": {
+        "jolicode/castor": "Castor 1.7+ is required to load the package with import('composer://jeromegxj/castor-api')"
+    },
     "require": {
         "php": ">=8.4",
         "devizzent/cebe-php-openapi": "^1.1.5",
